@@ -1,0 +1,35 @@
+// Ejecutar frontend (lista rápida)
+// 1) Asegúrate de tener el backend corriendo (daphne / manage.py runserver)
+// 2) Copia `.env.example` a `.env` y ajusta `API_BASE_URL`
+// 3) Instala dependencias:
+//    flutter pub get
+// 4) Ejecuta (web):
+//    ./run_frontend.sh
+//    (o `flutter run -d chrome --web-port 3000`)
+// 5) Alternativa con --dart-define (sobrescribe .env):
+//    ./run_frontend.sh --dart-define=API_BASE_URL=http://127.0.0.1:8000
+
+// Opciones de íconos de usuario:
+Icons.person                    // 👤 Usuario simple
+Icons.person_outline            // 👤 Usuario solo borde
+Icons.person_add                // 👤+ Usuario con signo +
+Icons.person_add_alt_1          // 👤+ Usuario con signo + (el que usé)
+Icons.account_circle            // 👤 Círculo con usuario
+Icons.face                      // 😀 Cara feliz
+Icons.badge                     // 🏅 Insignia
+
+
+
+curl -X POST http://127.0.0.1:8000/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "tu@email.com", "password": "tupassword"}'
+
+  flutter run -d chrome --web-port 3000
+
+  python manage.py runserver 0.0.0.0:8000
+
+  ApiService.configure(baseUrl: 'http://192.168.0.10:8000');
+
+  flutter run --dart-define=API_BASE_URL=http://192.168.0.10:8000
+
+  
