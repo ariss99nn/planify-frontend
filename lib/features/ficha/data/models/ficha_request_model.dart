@@ -7,19 +7,19 @@ String _fmtDate(DateTime d) =>
 
 // ── Ficha ──────────────────────────────────────────────────────────────────────
 
+/// Nota: 'horas_semanales_objetivo', 'trimestre' y 'fecha_finalizacion' ya
+/// NO se envían al crear una ficha — el backend los calcula automáticamente
+/// a partir de las horas del programa/versión y su nivel de formación.
 class FichaCreateRequest {
   final String codigoFicha;
   final int versionId;
   final String jornada;
   final int numeroEstudiantesEstimado;
   final String etapa;
-  final int horasSemanalesObjetivo;
-  final int trimestre;
   final String estado;
   final bool cadenaFormacion;
   final int? jefeGrupoId;
-  final DateTime fechaInicio;
-  final DateTime? fechaFinalizacion;
+  final DateTime? fechaInicio;
 
   const FichaCreateRequest({
     required this.codigoFicha,
@@ -27,13 +27,10 @@ class FichaCreateRequest {
     required this.jornada,
     required this.numeroEstudiantesEstimado,
     required this.etapa,
-    required this.horasSemanalesObjetivo,
-    required this.trimestre,
     required this.estado,
     required this.cadenaFormacion,
     this.jefeGrupoId,
-    required this.fechaInicio,
-    this.fechaFinalizacion,
+    this.fechaInicio,
   });
 
   Map<String, dynamic> toJson() => {
@@ -42,85 +39,71 @@ class FichaCreateRequest {
         'jornada':                     jornada,
         'numero_estudiantes_estimado': numeroEstudiantesEstimado,
         'etapa':                       etapa,
-        'horas_semanales_objetivo':    horasSemanalesObjetivo,
-        'trimestre':                   trimestre,
         'estado':                      estado,
         'cadena_formacion':            cadenaFormacion,
         if (jefeGrupoId != null) 'jefe_grupo': jefeGrupoId,
-        'fecha_inicio':                _fmtDate(fechaInicio),
-        if (fechaFinalizacion != null)
-          'fecha_finalizacion': _fmtDate(fechaFinalizacion!),
+        if (fechaInicio != null) 'fecha_inicio': _fmtDate(fechaInicio!),
       };
 }
 
+/// Nota: 'horas_semanales_objetivo', 'trimestre', 'cadena_formacion' y
+/// 'fecha_finalizacion' ya NO son editables desde aquí. La cadena de
+/// formación solo se define al crear la ficha; la fecha fin y las horas se
+/// recalculan automáticamente en el backend.
 class FichaUpdateRequest {
   final String? jornada;
   final int? numeroEstudiantesEstimado;
-  final int? horasSemanalesObjetivo;
-  final int? trimestre;
   final String? estado;
-  final bool? cadenaFormacion;
   final int? jefeGrupoId;
   final bool clearJefeGrupo;
   final DateTime? fechaInicio;
-  final DateTime? fechaFinalizacion;
 
   const FichaUpdateRequest({
     this.jornada,
     this.numeroEstudiantesEstimado,
-    this.horasSemanalesObjetivo,
-    this.trimestre,
     this.estado,
-    this.cadenaFormacion,
     this.jefeGrupoId,
     this.clearJefeGrupo = false,
     this.fechaInicio,
-    this.fechaFinalizacion,
   });
 
   Map<String, dynamic> toJson() {
     final m = <String, dynamic>{};
     if (jornada != null)                   m['jornada']                     = jornada;
     if (numeroEstudiantesEstimado != null) m['numero_estudiantes_estimado'] = numeroEstudiantesEstimado;
-    if (horasSemanalesObjetivo != null)    m['horas_semanales_objetivo']    = horasSemanalesObjetivo;
-    if (trimestre != null)                 m['trimestre']                   = trimestre;
     if (estado != null)                    m['estado']                      = estado;
-    if (cadenaFormacion != null)           m['cadena_formacion']            = cadenaFormacion;
     if (clearJefeGrupo) {
       m['jefe_grupo'] = null;
     } else if (jefeGrupoId != null) {
       m['jefe_grupo'] = jefeGrupoId;
     }
-    if (fechaInicio != null)       m['fecha_inicio']       = _fmtDate(fechaInicio!);
-    if (fechaFinalizacion != null) m['fecha_finalizacion'] = _fmtDate(fechaFinalizacion!);
+    if (fechaInicio != null) m['fecha_inicio'] = _fmtDate(fechaInicio!);
     return m;
   }
 }
 
+/// 'trimestre' ya no se envía: solo avanza mediante el flujo dedicado de
+/// avance de trimestre; el cambio de etapa solo transmite la etapa nueva.
 class EtapaUpdateRequest {
   final String etapa;
-  final int trimestre;
 
-  const EtapaUpdateRequest({required this.etapa, required this.trimestre});
+  const EtapaUpdateRequest({required this.etapa});
 
-  Map<String, dynamic> toJson() => {'etapa': etapa, 'trimestre': trimestre};
+  Map<String, dynamic> toJson() => {'etapa': etapa};
 }
 
 // ── Estudiante ─────────────────────────────────────────────────────────────────
 
+/// 'es_cadena' ya NO se envía: el backend lo deriva automáticamente de
+/// 'ficha.cadena_formacion' para mantener la coherencia ficha/estudiante.
 class AddEstudianteRequest {
   final int estudianteId;
-  final bool esCadena;
 
-  const AddEstudianteRequest({
-    required this.estudianteId,
-    required this.esCadena,
-  });
+  const AddEstudianteRequest({required this.estudianteId});
 
   Map<String, dynamic> toJson(int fichaId) => {
         'ficha':      fichaId,
         'estudiante': estudianteId,
-        'es_cadena':  esCadena,
       };
 }
 

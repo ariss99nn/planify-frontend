@@ -17,8 +17,8 @@ import '../../../../../features/users/services/user_service.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class DocenteListView extends StatefulWidget {
-  final void Function(int id)    onDetail;
-  final VoidCallback             onCreateTap;
+  final void Function(int id) onDetail;
+  final VoidCallback onCreateTap;
 
   const DocenteListView({
     super.key,
@@ -56,19 +56,26 @@ class _DocenteListViewState extends State<DocenteListView> {
   Widget _buildAvatar(DocenteEntity d) {
     return Container(
       decoration: BoxDecoration(
-        shape:  BoxShape.circle,
+        shape: BoxShape.circle,
         border: Border.all(color: AppTheme.primary, width: 2),
       ),
       child: ClipOval(
         child: SizedBox(
-          width: 52, height: 52,
+          width: 52,
+          height: 52,
           child: d.imagenUrl != null && d.imagenUrl!.isNotEmpty
-              ? Image.network(d.imagenUrl!, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _inicialAvatar(d.iniciales))
+              ? Image.network(
+                  d.imagenUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _inicialAvatar(d.iniciales),
+                )
               : d.avatarUrl != null && d.avatarUrl!.isNotEmpty
-                  ? Image.network(d.avatarUrl!, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _inicialAvatar(d.iniciales))
-                  : _inicialAvatar(d.iniciales),
+              ? Image.network(
+                  d.avatarUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _inicialAvatar(d.iniciales),
+                )
+              : _inicialAvatar(d.iniciales),
         ),
       ),
     );
@@ -80,7 +87,9 @@ class _DocenteListViewState extends State<DocenteListView> {
       child: Text(
         iniciales,
         style: const TextStyle(
-          color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 15,
+          color: AppTheme.primary,
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
         ),
       ),
     ),
@@ -90,18 +99,30 @@ class _DocenteListViewState extends State<DocenteListView> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.person_off_outlined, color: Colors.red, size: 40),
+        icon: const Icon(
+          Icons.person_off_outlined,
+          color: Colors.red,
+          size: 40,
+        ),
         title: const Text('Desactivar docente'),
         content: Text(
           '¿Estás seguro de desactivar a ${d.nombre}?\n\n'
           'El perfil y su usuario quedarán inactivos.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           TextButton(
-            onPressed: () { Navigator.pop(ctx); _deactivate(d.id); },
-            child: const Text('Desactivar',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deactivate(d.id);
+            },
+            child: const Text(
+              'Desactivar',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -132,8 +153,10 @@ class _DocenteListViewState extends State<DocenteListView> {
         title: const Text(
           'DOCENTES',
           style: TextStyle(
-            color: AppTheme.textPrimary, fontSize: 18,
-            fontWeight: FontWeight.w700, letterSpacing: 3.0,
+            color: AppTheme.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 3.0,
           ),
         ),
         bottom: PreferredSize(
@@ -152,15 +175,15 @@ class _DocenteListViewState extends State<DocenteListView> {
               _applyFilters();
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: null,  child: Text('Todos')),
-              PopupMenuItem(value: true,  child: Text('Activos')),
+              PopupMenuItem(value: null, child: Text('Todos')),
+              PopupMenuItem(value: true, child: Text('Activos')),
               PopupMenuItem(value: false, child: Text('Inactivos')),
             ],
           ),
           IconButton(
-            icon:     const Icon(Icons.refresh, color: AppTheme.primary),
+            icon: const Icon(Icons.refresh, color: AppTheme.primary),
             onPressed: _applyFilters,
-            tooltip:  'Recargar',
+            tooltip: 'Recargar',
           ),
         ],
       ),
@@ -170,7 +193,7 @@ class _DocenteListViewState extends State<DocenteListView> {
             padding: const EdgeInsets.all(16),
             child: CyberSearchBar(
               controller: _searchCtrl,
-              hint:       'Buscar por nombre, email o especialidad...',
+              hint: 'Buscar por nombre, email o especialidad...',
               onSubmitted: (_) => _applyFilters(),
               onClear: () {
                 _searchCtrl.clear();
@@ -194,7 +217,9 @@ class _DocenteListViewState extends State<DocenteListView> {
               ),
             ),
           if (provider.loading)
-            const Expanded(child: CyberLoadingView(mensaje: 'Cargando docentes…'))
+            const Expanded(
+              child: CyberLoadingView(mensaje: 'Cargando docentes…'),
+            )
           else if (provider.error != null && provider.docentes.isEmpty)
             Expanded(
               child: CyberErrorView(
@@ -205,23 +230,28 @@ class _DocenteListViewState extends State<DocenteListView> {
           else if (provider.docentes.isEmpty)
             Expanded(
               child: CyberEmptyView(
-                icon:     Icons.school_outlined,
-                title:    'No hay docentes',
+                icon: Icons.school_outlined,
+                title: 'No hay docentes',
                 subtitle: 'Prueba con otra búsqueda',
               ),
             )
           else
             Expanded(
               child: ListView.builder(
-                padding:   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 itemCount: provider.docentes.length,
                 itemBuilder: (_, i) {
                   final d = provider.docentes[i];
                   return _DocenteCard(
-                    docente:      d,
-                    avatar:       _buildAvatar(d),
-                    onDetail:     () => widget.onDetail(d.id),
-                    onDeactivate: d.estado ? () => _showDeactivateDialog(d) : null,
+                    docente: d,
+                    avatar: _buildAvatar(d),
+                    onDetail: () => widget.onDetail(d.id),
+                    onDeactivate: d.estado
+                        ? () => _showDeactivateDialog(d)
+                        : null,
                   );
                 },
               ),
@@ -229,12 +259,12 @@ class _DocenteListViewState extends State<DocenteListView> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        heroTag:         'fab_docentes',
-        onPressed:       widget.onCreateTap,
+        heroTag: 'fab_docentes',
+        onPressed: widget.onCreateTap,
         backgroundColor: AppTheme.primary,
         foregroundColor: AppTheme.background,
-        tooltip:         'Crear docente',
-        child:           const Icon(Icons.add),
+        tooltip: 'Crear docente',
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -243,10 +273,10 @@ class _DocenteListViewState extends State<DocenteListView> {
 // ─── Tarjeta de docente ───────────────────────────────────────────────────────
 
 class _DocenteCard extends StatelessWidget {
-  final DocenteEntity  docente;
-  final Widget         avatar;
-  final VoidCallback   onDetail;
-  final VoidCallback?  onDeactivate;
+  final DocenteEntity docente;
+  final Widget avatar;
+  final VoidCallback onDetail;
+  final VoidCallback? onDeactivate;
 
   const _DocenteCard({
     required this.docente,
@@ -261,9 +291,9 @@ class _DocenteCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
       decoration: BoxDecoration(
-        color:        AppTheme.surface.withOpacity(0.25),
+        color: AppTheme.surface.withOpacity(0.25),
         borderRadius: BorderRadius.circular(12),
-        border:       Border.all(color: AppTheme.border.withOpacity(0.3)),
+        border: Border.all(color: AppTheme.border.withOpacity(0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -282,19 +312,22 @@ class _DocenteCard extends StatelessWidget {
                           d.nombre,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
-                            fontSize: 15, color: AppTheme.textPrimary,
+                            fontSize: 15,
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                       ),
                       if (d.estaSobrecargado == true) ...[
                         const SizedBox(width: 6),
                         Tooltip(
-                          message: 'Sobrecargado: '
+                          message:
+                              'Sobrecargado: '
                               '${d.horasAsignadasSemana?.toStringAsFixed(1)} h '
                               '/ ${d.horasMaxEfectivasLocal} h',
                           child: const Icon(
                             Icons.warning_amber_rounded,
-                            size: 16, color: Colors.orange,
+                            size: 16,
+                            color: Colors.orange,
                           ),
                         ),
                       ],
@@ -304,13 +337,15 @@ class _DocenteCard extends StatelessWidget {
                   Text(
                     d.email,
                     style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary.withOpacity(0.6)),
+                      fontSize: 12,
+                      color: AppTheme.textSecondary.withOpacity(0.6),
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
                   Wrap(
-                    spacing: 6, runSpacing: 4,
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
                       _Badge(label: d.especialidad, color: AppTheme.accent),
                       _Badge(
@@ -319,9 +354,10 @@ class _DocenteCard extends StatelessWidget {
                       ),
                       if (d.estaSobrecargado == true)
                         _Badge(
-                          label: '${d.horasAsignadasSemana?.toStringAsFixed(1)} h',
+                          label:
+                              '${d.horasAsignadasSemana?.toStringAsFixed(1)} h',
                           color: Colors.orange,
-                          icon:  Icons.warning_amber_outlined,
+                          icon: Icons.warning_amber_outlined,
                         ),
                     ],
                   ),
@@ -340,10 +376,10 @@ class _DocenteCard extends StatelessWidget {
                 if (onDeactivate != null) ...[
                   const SizedBox(height: 6),
                   _ActionBtn(
-                    icon:    Icons.person_off_outlined,
-                    color:   Colors.red.shade400,
+                    icon: Icons.person_off_outlined,
+                    color: Colors.red.shade400,
                     tooltip: 'Desactivar',
-                    onTap:   onDeactivate!,
+                    onTap: onDeactivate!,
                   ),
                 ],
               ],
@@ -356,8 +392,8 @@ class _DocenteCard extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  final String    label;
-  final Color     color;
+  final String label;
+  final Color color;
   final IconData? icon;
   const _Badge({required this.label, required this.color, this.icon});
 
@@ -366,16 +402,25 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color:        color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border:       Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[Icon(icon, size: 11, color: color), const SizedBox(width: 3)],
-          Text(label, style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+          if (icon != null) ...[
+            Icon(icon, size: 11, color: color),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
@@ -383,13 +428,15 @@ class _Badge extends StatelessWidget {
 }
 
 class _ActionBtn extends StatelessWidget {
-  final IconData     icon;
-  final Color        color;
-  final String       tooltip;
+  final IconData icon;
+  final Color color;
+  final String tooltip;
   final VoidCallback onTap;
   const _ActionBtn({
-    required this.icon, required this.color,
-    required this.tooltip, required this.onTap,
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
   });
 
   @override
@@ -397,14 +444,14 @@ class _ActionBtn extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: InkWell(
-        onTap:        onTap,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color:        color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border:       Border.all(color: color.withOpacity(0.3)),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Icon(icon, size: 18, color: color),
         ),
@@ -427,18 +474,18 @@ class DocenteCreateView extends StatefulWidget {
 
 class _DocenteCreateViewState extends State<DocenteCreateView> {
   final _especialidadCtrl = TextEditingController();
-  final _horasCtrl        = TextEditingController(text: '40');
-  final _horasExtraCtrl   = TextEditingController(text: '0');
-  final _formKey          = GlobalKey<FormState>();
-  final _picker           = ImagePicker();
+  final _horasCtrl = TextEditingController(text: '40');
+  final _horasExtraCtrl = TextEditingController(text: '0');
+  final _formKey = GlobalKey<FormState>();
+  final _picker = ImagePicker();
 
-  bool                       _loading           = false;
-  bool                       _loadingUsuarios   = false;
-  int?                       _selectedUserId;
-  List<Map<String, dynamic>> _usuariosDocentes  = [];
-  bool                       _permiteHorasExtra = false;
-  XFile?                     _imagenXFile;
-  Uint8List?                 _imagenBytes;
+  bool _loading = false;
+  bool _loadingUsuarios = false;
+  int? _selectedUserId;
+  List<Map<String, dynamic>> _usuariosDocentes = [];
+  bool _permiteHorasExtra = false;
+  XFile? _imagenXFile;
+  Uint8List? _imagenBytes;
 
   @override
   void initState() {
@@ -457,14 +504,18 @@ class _DocenteCreateViewState extends State<DocenteCreateView> {
   Future<void> _loadUsuariosDocentes() async {
     setState(() => _loadingUsuarios = true);
     try {
-      final data    = await UserService.getUsersDocentes();
+      final data = await UserService.getUsersDocentes();
       final results = data['results'] as List;
       setState(() {
-        _usuariosDocentes = results.map((e) => {
-          'id':     e['id']      as int,
-          'nombre': '${e['nombre']} ${e['apellido']}',
-          'email':  e['email']   as String,
-        }).toList();
+        _usuariosDocentes = results
+            .map(
+              (e) => {
+                'id': e['id'] as int,
+                'nombre': '${e['nombre']} ${e['apellido']}',
+                'email': e['email'] as String,
+              },
+            )
+            .toList();
       });
     } catch (_) {
       setState(() => _usuariosDocentes = []);
@@ -477,36 +528,55 @@ class _DocenteCreateViewState extends State<DocenteCreateView> {
     final picked = await _picker.pickImage(source: source, imageQuality: 80);
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
-    setState(() { _imagenXFile = picked; _imagenBytes = bytes; });
+    setState(() {
+      _imagenXFile = picked;
+      _imagenBytes = bytes;
+    });
   }
 
   Future<void> _seleccionarImagen() async {
-    if (kIsWeb) { await _pickImage(ImageSource.gallery); return; }
+    if (kIsWeb) {
+      await _pickImage(ImageSource.gallery);
+      return;
+    }
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title:   const Text('Tomar foto'),
-              onTap:   () async { Navigator.pop(context); await _pickImage(ImageSource.camera); },
+              title: const Text('Tomar foto'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _pickImage(ImageSource.camera);
+              },
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title:   const Text('Elegir de galería'),
-              onTap:   () async { Navigator.pop(context); await _pickImage(ImageSource.gallery); },
+              title: const Text('Elegir de galería'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _pickImage(ImageSource.gallery);
+              },
             ),
             if (_imagenXFile != null)
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title:   const Text('Quitar foto', style: TextStyle(color: Colors.red)),
-                onTap:   () {
+                title: const Text(
+                  'Quitar foto',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () {
                   Navigator.pop(context);
-                  setState(() { _imagenXFile = null; _imagenBytes = null; });
+                  setState(() {
+                    _imagenXFile = null;
+                    _imagenBytes = null;
+                  });
                 },
               ),
           ],
@@ -520,10 +590,10 @@ class _DocenteCreateViewState extends State<DocenteCreateView> {
     setState(() => _loading = true);
     try {
       await context.read<DocenteProvider>().createDocente(
-        userId:               _selectedUserId!,
-        especialidad:         _especialidadCtrl.text.trim(),
-        horasMaxSemanales:    int.parse(_horasCtrl.text.trim()),
-        permiteHorasExtra:    _permiteHorasExtra,
+        userId: _selectedUserId!,
+        especialidad: _especialidadCtrl.text.trim(),
+        horasMaxSemanales: int.parse(_horasCtrl.text.trim()),
+        permiteHorasExtra: _permiteHorasExtra,
         horasExtraAutorizadas: _permiteHorasExtra
             ? int.parse(_horasExtraCtrl.text.trim())
             : 0,
@@ -545,7 +615,7 @@ class _DocenteCreateViewState extends State<DocenteCreateView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:           const Text('Crear Docente'),
+        title: const Text('Crear Docente'),
         backgroundColor: AppTheme.primary,
         foregroundColor: AppTheme.background,
       ),
@@ -561,36 +631,46 @@ class _DocenteCreateViewState extends State<DocenteCreateView> {
                   alignment: Alignment.bottomRight,
                   children: [
                     CircleAvatar(
-                      radius:          52,
+                      radius: 52,
                       backgroundColor: AppTheme.primary.withOpacity(0.12),
                       backgroundImage: _imagenBytes != null
-                          ? MemoryImage(_imagenBytes!) : null,
+                          ? MemoryImage(_imagenBytes!)
+                          : null,
                       child: _imagenBytes == null
-                          ? const Icon(Icons.school, size: 52, color: AppTheme.primary)
+                          ? const Icon(
+                              Icons.school,
+                              size: 52,
+                              color: AppTheme.primary,
+                            )
                           : null,
                     ),
                     CircleAvatar(
-                      radius:          16,
+                      radius: 16,
                       backgroundColor: AppTheme.primary,
-                      child: const Icon(Icons.camera_alt, size: 16,
-                          color: AppTheme.background),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        size: 16,
+                        color: AppTheme.background,
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                _imagenBytes == null ? 'Foto institucional (opcional)' : 'Toca para cambiar',
+                _imagenBytes == null
+                    ? 'Foto institucional (opcional)'
+                    : 'Toca para cambiar',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 24),
               _loadingUsuarios
                   ? const Center(child: CircularProgressIndicator())
                   : DropdownButtonFormField<int>(
-                      value:      _selectedUserId,
+                      value: _selectedUserId,
                       isExpanded: true,
                       decoration: const InputDecoration(
-                        labelText:  'Usuario docente',
+                        labelText: 'Usuario docente',
                         prefixIcon: Icon(Icons.person_search_outlined),
                       ),
                       items: _usuariosDocentes.map((u) {
@@ -599,61 +679,70 @@ class _DocenteCreateViewState extends State<DocenteCreateView> {
                           child: Text(
                             '${u['nombre']}  ·  ${u['email']}',
                             style: const TextStyle(
-                                color: AppTheme.textPrimary, fontSize: 14),
+                              color: AppTheme.textPrimary,
+                              fontSize: 14,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         );
                       }).toList(),
                       onChanged: (v) => setState(() => _selectedUserId = v),
-                      validator: (_) =>
-                          _selectedUserId == null ? 'Selecciona un usuario' : null,
+                      validator: (_) => _selectedUserId == null
+                          ? 'Selecciona un usuario'
+                          : null,
                     ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _especialidadCtrl,
                 decoration: const InputDecoration(
-                  labelText:  'Especialidad',
+                  labelText: 'Especialidad',
                   prefixIcon: Icon(Icons.psychology_outlined),
                 ),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Ingresa la especialidad';
-                  if (v.length < 3)           return 'Mínimo 3 caracteres';
+                  if (v.length < 3) return 'Mínimo 3 caracteres';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller:   _horasCtrl,
+                controller: _horasCtrl,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText:  'Horas máx. semanales (máx. 40)',
+                  labelText: 'Horas máx. semanales (máx. 40)',
                   prefixIcon: Icon(Icons.access_time_outlined),
                 ),
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Ingresa las horas máximas';
+                  if (v == null || v.isEmpty)
+                    return 'Ingresa las horas máximas';
                   final n = int.tryParse(v);
                   if (n == null) return 'Debe ser un número';
-                  if (n <= 0)    return 'Debe ser mayor a 0';
-                  if (n > 40)    return 'No puede superar 40h regulares';
+                  if (n <= 0) return 'Debe ser mayor a 0';
+                  if (n > 40) return 'No puede superar 40h regulares';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color:        AppTheme.surface.withOpacity(0.4),
+                  color: AppTheme.surface.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(12),
-                  border:       Border.all(color: AppTheme.border.withOpacity(0.4)),
+                  border: Border.all(color: AppTheme.border.withOpacity(0.4)),
                 ),
                 child: SwitchListTile(
-                  value:     _permiteHorasExtra,
+                  value: _permiteHorasExtra,
                   onChanged: (v) => setState(() {
                     _permiteHorasExtra = v;
                     if (!v) _horasExtraCtrl.text = '0';
                   }),
-                  title: const Text('Permite horas extra',
-                      style: TextStyle(color: AppTheme.textPrimary)),
+                  title: const Text(
+                    'Permite horas extra',
+                    style: TextStyle(color: AppTheme.textPrimary),
+                  ),
                   subtitle: Text(
                     _permiteHorasExtra
                         ? 'El docente puede superar el máximo regular'
@@ -664,26 +753,27 @@ class _DocenteCreateViewState extends State<DocenteCreateView> {
                           : AppTheme.textSecondary.withOpacity(0.6),
                     ),
                   ),
-                  activeColor:    AppTheme.primary,
+                  activeColor: AppTheme.primary,
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
               if (_permiteHorasExtra) ...[
                 const SizedBox(height: 12),
                 TextFormField(
-                  controller:   _horasExtraCtrl,
+                  controller: _horasExtraCtrl,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                    labelText:  'Horas extra autorizadas',
+                    labelText: 'Horas extra autorizadas',
                     prefixIcon: Icon(Icons.more_time_outlined),
                     helperText: 'Horas adicionales sobre el máximo regular.',
                   ),
                   validator: (v) {
                     if (!_permiteHorasExtra) return null;
-                    if (v == null || v.isEmpty) return 'Ingresa las horas extra';
+                    if (v == null || v.isEmpty)
+                      return 'Ingresa las horas extra';
                     final n = int.tryParse(v);
                     if (n == null) return 'Debe ser un número';
-                    if (n <= 0)    return 'Debe ser mayor a 0';
+                    if (n <= 0) return 'Debe ser mayor a 0';
                     return null;
                   },
                 ),
@@ -695,18 +785,26 @@ class _DocenteCreateViewState extends State<DocenteCreateView> {
                   onPressed: _loading ? null : _create,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
-                    padding:         const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: _loading
                       ? const SizedBox(
-                          height: 20, width: 20,
+                          height: 20,
+                          width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(AppTheme.background),
+                            valueColor: AlwaysStoppedAnimation(
+                              AppTheme.background,
+                            ),
                           ),
                         )
-                      : const Text('Crear Docente',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      : const Text(
+                          'Crear Docente',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
             ],

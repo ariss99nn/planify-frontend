@@ -14,15 +14,24 @@ _EstadoVisual _visualPara(EstadoReporte estado) {
   switch (estado) {
     case EstadoReporte.pendiente:
       return const _EstadoVisual(
-          AppTheme.textSecondary, Icons.schedule_rounded, false);
+        AppTheme.textSecondary,
+        Icons.schedule_rounded,
+        false,
+      );
     case EstadoReporte.procesando:
-      return const _EstadoVisual(AppTheme.accent, Icons.autorenew_rounded, true);
+      return const _EstadoVisual(
+        AppTheme.accent,
+        Icons.autorenew_rounded,
+        true,
+      );
     case EstadoReporte.listo:
       return const _EstadoVisual(
-          AppTheme.primary, Icons.check_circle_rounded, false);
+        AppTheme.primary,
+        Icons.check_circle_rounded,
+        false,
+      );
     case EstadoReporte.error:
-      return const _EstadoVisual(
-          Colors.redAccent, Icons.error_rounded, false);
+      return const _EstadoVisual(Colors.redAccent, Icons.error_rounded, false);
   }
 }
 
@@ -58,15 +67,18 @@ class _EstadoReporteBadgeState extends State<EstadoReporteBadge>
     final visual = _visualPara(widget.estado);
 
     final icono = visual.gira
-        ? RotationTransition(turns: _controller, child: Icon(visual.icono, size: 16))
+        ? RotationTransition(
+            turns: _controller,
+            child: Icon(visual.icono, size: 16),
+          )
         : Icon(visual.icono, size: 16);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: visual.color.withOpacity(0.12),
+        color: visual.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: visual.color.withOpacity(0.5)),
+        border: Border.all(color: visual.color.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

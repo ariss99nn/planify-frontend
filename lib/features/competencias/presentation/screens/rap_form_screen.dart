@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/rap_model.dart';
 import '../providers/rap_provider.dart';
+import '../providers/competencia_provider.dart';
 import '../../competencia_theme.dart';
 import '../../../../core/widgets/widgets.dart';
 
@@ -19,10 +20,10 @@ class RapFormScreen extends StatefulWidget {
 
 class _RapFormScreenState extends State<RapFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _competenciaId;
   late final TextEditingController _codigo;
   late final TextEditingController _descripcion;
   late final TextEditingController _criterios;
+  int? _competenciaId;
 
   bool get _isEdit => widget.existing != null;
 
@@ -30,21 +31,23 @@ class _RapFormScreenState extends State<RapFormScreen> {
   void initState() {
     super.initState();
     final e = widget.existing;
-    _competenciaId = TextEditingController(
-      text: e?.competenciaId != null
-          ? '${e!.competenciaId}'
-          : (widget.preCompetenciaId != null
-              ? '${widget.preCompetenciaId}'
-              : ''),
-    );
+    _competenciaId = e?.competenciaId ?? widget.preCompetenciaId;
     _codigo      = TextEditingController(text: e?.codigo ?? '');
     _descripcion = TextEditingController(text: e?.descripcion ?? '');
     _criterios   = TextEditingController(text: e?.criteriosEvaluacion ?? '');
+
+    // Trae el listado de competencias para el selector (solo al crear).
+    if (!_isEdit) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<CompetenciaProvider>().fetchCompetenciasForDropdown();
+      });
+    }
   }
 
   @override
   void dispose() {
-    for (final c in [_competenciaId, _codigo, _descripcion, _criterios]) {
+    for (final c in [_codigo, _descripcion, _criterios]) {
       c.dispose();
     }
     super.dispose();
@@ -52,6 +55,15 @@ class _RapFormScreenState extends State<RapFormScreen> {
 
   Future<void> _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_isEdit && _competenciaId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecciona una competencia.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
     final prov = context.read<RapProvider>();
     prov.clearSaveError();
 
@@ -63,7 +75,7 @@ class _RapFormScreenState extends State<RapFormScreen> {
       });
     } else {
       result = await prov.create({
-        'competencia':          int.parse(_competenciaId.text.trim()),
+        'competencia':          _competenciaId,
         'codigo':               _codigo.text.trim().toUpperCase(),
         'descripcion':          _descripcion.text.trim(),
         'criterios_evaluacion': _criterios.text.trim(),
@@ -110,16 +122,48 @@ class _RapFormScreenState extends State<RapFormScreen> {
                     CyberErrorBanner(message: prov.saveError),
 
                   if (!_isEdit) ...[
-                    _label('ID de la competencia *'),
-                    _textField(
-                      controller: _competenciaId,
-                      hint: 'Ej: 7',
-                      inputType: TextInputType.number,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Requerido';
-                        if (int.tryParse(v.trim()) == null)
-                          return 'Debe ser un número';
-                        return null;
+                    _label('Competencia *'),
+                    Consumer<CompetenciaProvider>(
+                      builder: (context, compProv, _) {
+                        if (compProv.isLoadingDropdown) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: CT.primary),
+                            ),
+                          );
+                        }
+                        if (compProv.dropdownError != null) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(compProv.dropdownError!,
+                                  style: const TextStyle(
+                                      color: Colors.redAccent, fontSize: 12)),
+                              TextButton(
+                                onPressed: () => compProv
+                                    .fetchCompetenciasForDropdown(force: true),
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
+                          );
+                        }
+                        final competencias = compProv.dropdownItems;
+                        final valorValido = competencias
+                            .any((c) => c.id == _competenciaId);
+                        return _dropdown<int>(
+                          value: valorValido ? _competenciaId : null,
+                          hint: 'Selecciona una competencia',
+                          items: {
+                            for (final c in competencias)
+                              c.id: '${c.codigo} — ${c.nombre}',
+                          },
+                          onChanged: (v) =>
+                              setState(() => _competenciaId = v),
+                        );
                       },
                     ),
                     const SizedBox(height: 16),
@@ -241,6 +285,25 @@ class _RapFormScreenState extends State<RapFormScreen> {
       validator: validator,
       style: const TextStyle(color: CT.textPrimary, fontSize: 14),
       decoration: InputDecoration(hintText: hint),
+    );
+  }
+
+  Widget _dropdown<T>({
+    required T?  value,
+    required Map<T, String> items,
+    required ValueChanged<T?> onChanged,
+    String? hint,
+  }) {
+    return DropdownButtonFormField<T>(
+      value: value,
+      dropdownColor: CT.surfaceLight,
+      style: const TextStyle(color: CT.textPrimary, fontSize: 14),
+      icon: const Icon(Icons.keyboard_arrow_down, color: CT.primary),
+      decoration: InputDecoration(hintText: hint),
+      items: items.entries
+          .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+          .toList(),
+      onChanged: onChanged,
     );
   }
 }

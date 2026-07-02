@@ -27,6 +27,8 @@ class ReporteTipoTile extends StatelessWidget {
         return Icons.workspace_premium_outlined;
       case ReporteTipo.aulas:
         return Icons.meeting_room_outlined;
+      case ReporteTipo.planes:
+        return Icons.event_note_outlined;
       case ReporteTipo.analitica:
         return Icons.insights_outlined;
       case ReporteTipo.novedades:
@@ -44,35 +46,36 @@ class ReporteTipoTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: habilitado ? onTap : null,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             decoration: BoxDecoration(
               color: AppTheme.surface,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppTheme.border),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(_icono, color: AppTheme.primary, size: 28),
-                const SizedBox(height: 10),
+                Icon(_icono, color: AppTheme.primary, size: 22),
+                const SizedBox(height: 6),
                 Text(
                   tipo.label,
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
                 if (!tipo.implementadoEnBackend) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 3),
                   const Text(
                     'Próximamente',
                     style: TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 11),
+                        color: AppTheme.textSecondary, fontSize: 10),
                   ),
                 ],
               ],

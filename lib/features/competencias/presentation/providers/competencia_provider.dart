@@ -192,4 +192,33 @@ class CompetenciaProvider extends ChangeNotifier {
     _saveError = null;
     notifyListeners();
   }
+
+  // ── Listado completo para selects (ej: "Nuevo RAP") ─────────────────────
+  // Independiente de la paginación del listado principal: trae todas las
+  // competencias de una sola vez para poblar un dropdown.
+  List<CompetenciaItem> _dropdownItems = [];
+  bool                  _isLoadingDropdown = false;
+  String?               dropdownError;
+
+  List<CompetenciaItem> get dropdownItems     => _dropdownItems;
+  bool                   get isLoadingDropdown => _isLoadingDropdown;
+
+  Future<void> fetchCompetenciasForDropdown({bool force = false}) async {
+    if (_isLoadingDropdown) return;
+    if (_dropdownItems.isNotEmpty && !force) return;
+    _isLoadingDropdown = true;
+    dropdownError = null;
+    notifyListeners();
+    try {
+      final res = await _repo.list(page: 1, pageSize: 500);
+      _dropdownItems = res.results;
+    } on ApiException catch (e) {
+      dropdownError = e.message;
+    } catch (_) {
+      dropdownError = 'Error de conexión.';
+    } finally {
+      _isLoadingDropdown = false;
+      notifyListeners();
+    }
+  }
 }

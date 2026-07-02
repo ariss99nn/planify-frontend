@@ -1,11 +1,21 @@
 enum TipoExportacion {
-  fichas  ('FICHAS',   'Fichas'),
-  docentes('DOCENTES', 'Docentes'),
-  horarios('HORARIOS', 'Horarios');
+  fichas      ('FICHAS',       'Fichas'),
+  estudiantes ('ESTUDIANTES',  'Estudiantes'),
+  docentes    ('DOCENTES',     'Docentes'),
+  horarios    ('HORARIOS',     'Horarios'),
+  aulas       ('AULAS',        'Aulas'),
+  planes      ('PLANES',       'Planes trimestrales'),
+  competencias('COMPETENCIAS', 'Competencias'),
+  analitica   ('ANALITICA',    'Analítica'),
+  completa    ('COMPLETA',     'Base de datos completa');
 
   const TipoExportacion(this.value, this.label);
   final String value;
   final String label;
+
+  /// La exportación completa combina todas las tablas en un solo
+  /// archivo (una hoja por módulo) y por eso solo admite Excel.
+  bool get soloExcel => this == TipoExportacion.completa;
 
   static TipoExportacion? fromValue(String v) {
     for (final e in TipoExportacion.values) {

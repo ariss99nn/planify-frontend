@@ -3,12 +3,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/theme/theme.dart';
+import '../../../../../core/api/api_service.dart';
 import '../../../../../core/models/paginated_response.dart';
 import '../../providers/ficha_provider.dart';
 import '../../../data/models/ficha_request_model.dart';
 import '../../../data/repositories_impl/ficha_repository_impl.dart';
 import '../../../domain/entities/ficha_entity.dart';
 import '../../../domain/repositories/ficha_repository.dart';
+import '../../../../auth/models/user_model.dart';
+import '../ficha_pickers.dart';
 
 class ReasignacionCreateView extends StatefulWidget {
   const ReasignacionCreateView({super.key});
@@ -23,8 +26,7 @@ class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
   final _motivoCtrl  = TextEditingController();
   final _fichaRepo   = FichaRepositoryImpl();
 
-  int?    _estudianteId;
-  String? _estudianteNombre;
+  UserModel? _estudiante;
 
   FichaListEntity? _fichaOrigen;
   FichaListEntity? _fichaDestino;
@@ -36,45 +38,9 @@ class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
   }
 
   Future<void> _pickEstudiante() async {
-    final ctrl = TextEditingController();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('ID del estudiante',
-            style: TextStyle(color: AppTheme.textPrimary)),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          style: const TextStyle(color: AppTheme.textPrimary),
-          decoration: const InputDecoration(
-            labelText: 'ID del estudiante',
-            prefixIcon:
-                Icon(Icons.person_search_outlined, color: AppTheme.primary),
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () {
-              final id = int.tryParse(ctrl.text.trim());
-              if (id != null) {
-                setState(() {
-                  _estudianteId     = id;
-                  _estudianteNombre = 'Estudiante #$id';
-                });
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
-    );
-    ctrl.dispose();
+    final picked = await pickEstudiante(context);
+    if (picked == null) return;
+    setState(() => _estudiante = picked);
   }
 
   Future<void> _pickFicha({required bool esOrigen}) async {
@@ -101,7 +67,7 @@ class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_estudianteId == null) {
+    if (_estudiante == null) {
       _showSnack('Selecciona un estudiante.', isError: true);
       return;
     }
@@ -120,7 +86,7 @@ class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
     }
 
     final request = ReasignacionCreateRequest(
-      estudianteId:  _estudianteId!,
+      estudianteId:  _estudiante!.id,
       fichaOrigenId: _fichaOrigen!.id,
       fichaDestinoId: _fichaDestino!.id,
       motivo:        _motivoCtrl.text.trim(),
@@ -175,9 +141,13 @@ class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
           children: [
             _SectionLabel('Estudiante'),
             _PickerTile(
-              label: _estudianteNombre ?? 'Seleccionar estudiante',
+              label: _estudiante != null
+                  ? (_estudiante!.nombreCompleto.isNotEmpty
+                      ? _estudiante!.nombreCompleto
+                      : '${_estudiante!.nombre} ${_estudiante!.apellido}')
+                  : 'Seleccionar estudiante',
               icon:  Icons.person_outline,
-              color: _estudianteId != null ? AppTheme.primary : null,
+              color: _estudiante != null ? AppTheme.primary : null,
               onTap: _pickEstudiante,
             ),
             const SizedBox(height: 20),
@@ -331,6 +301,7 @@ class _FichaSearchSheetState extends State<_FichaSearchSheet> {
   List<FichaListEntity> _resultados = [];
   bool   _cargando   = false;
   String _ultimaBusq = '';
+  String? _error;
 
   @override
   void initState() {
@@ -345,9 +316,12 @@ class _FichaSearchSheetState extends State<_FichaSearchSheet> {
   }
 
   Future<void> _buscar(String query) async {
-    if (query == _ultimaBusq) return;
+    if (query == _ultimaBusq && !_cargando && _error == null) return;
     _ultimaBusq = query;
-    setState(() => _cargando = true);
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
     try {
       final PaginatedResponse<FichaListEntity> res =
           await widget.fichaRepo.getFichas(
@@ -362,8 +336,21 @@ class _FichaSearchSheetState extends State<_FichaSearchSheet> {
             .where((f) => f.id != widget.excluirId)
             .toList();
       });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _resultados = [];
+        _error = e.statusCode >= 500
+            ? 'El servidor no pudo cargar las fichas (${e.statusCode}). '
+                'Intenta de nuevo.'
+            : e.message;
+      });
     } catch (_) {
-      if (mounted) setState(() => _resultados = []);
+      if (!mounted) return;
+      setState(() {
+        _resultados = [];
+        _error = 'No se pudo conectar con el servidor. Intenta de nuevo.';
+      });
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -410,7 +397,36 @@ class _FichaSearchSheetState extends State<_FichaSearchSheet> {
           Expanded(
             child: _cargando
                 ? const Center(child: CircularProgressIndicator())
-                : _resultados.isEmpty
+                : _error != null
+                    ? Center(
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  color: Colors.redAccent, size: 28),
+                              const SizedBox(height: 10),
+                              Text(_error!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      color: Colors.redAccent)),
+                              const SizedBox(height: 14),
+                              OutlinedButton.icon(
+                                onPressed: () => _buscar(_ultimaBusq),
+                                icon: const Icon(Icons.refresh, size: 18),
+                                label: const Text('Reintentar'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.primary,
+                                  side: BorderSide(color: AppTheme.primary),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _resultados.isEmpty
                     ? Center(
                         child: Text('Sin resultados',
                             style: TextStyle(

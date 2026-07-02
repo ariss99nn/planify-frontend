@@ -7,6 +7,11 @@ import '../../data/datasources/analitica_remote_datasource.dart';
 import '../../data/repositories_impl/analitica_repository_impl.dart';
 import '../../domain/entities/analitica_entities.dart';
 import '../../domain/usecases/analitica_usecases.dart';
+import '../../../reportes/data/repositories_impl/reporte_repository_impl.dart';
+import '../../../reportes/domain/entities/reporte_generado_entity.dart';
+import '../../../reportes/presentation/providers/reporte_provider.dart';
+import '../../../reportes/presentation/widgets/analitica_filtros_sheet.dart';
+import '../../../reportes/presentation/widgets/views/reporte_estado_view.dart';
 import '../providers/analitica_provider.dart';
 
 class AnaliticaGestionScreen extends StatelessWidget {
@@ -53,6 +58,44 @@ class _AnaliticaGestionViewState extends State<_AnaliticaGestionView>
     super.dispose();
   }
 
+  Future<void> _exportarConIA(BuildContext context) async {
+    final seleccion = await mostrarAnaliticaFiltrosSheet(context);
+    if (seleccion == null || !context.mounted) return;
+
+    final reporteProvider = ReporteProvider(repository: ReporteRepositoryImpl());
+    final reporte = await reporteProvider.solicitar(
+      tipo: ReporteTipo.analitica,
+      filtros: seleccion.toFiltros(),
+    );
+
+    if (!context.mounted) return;
+
+    if (reporte == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            reporteProvider.errorSolicitud ?? 'No se pudo solicitar el reporte.',
+          ),
+          backgroundColor: Colors.redAccent.shade700,
+        ),
+      );
+      reporteProvider.dispose();
+      return;
+    }
+
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider.value(
+            value: reporteProvider,
+            child: Scaffold(
+              appBar: AppBar(title: const Text('Reporte de Analítica')),
+              body: ReporteEstadoView(reporteId: reporte.id),
+            ),
+          ),
+        ))
+        .then((_) => reporteProvider.dispose());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,6 +104,13 @@ class _AnaliticaGestionViewState extends State<_AnaliticaGestionView>
           'ANALÍTICA',
           style: TextStyle(letterSpacing: 2.0, fontWeight: FontWeight.w700),
         ),
+        actions: [
+          IconButton(
+            onPressed: () => _exportarConIA(context),
+            icon: const Icon(Icons.auto_awesome_rounded),
+            tooltip: 'Exportar reporte con IA (PDF/Excel)',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppTheme.primary,

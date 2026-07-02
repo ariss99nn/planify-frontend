@@ -10,7 +10,6 @@ import '../../providers/novedad_provider.dart';
 import '../atender_novedad_dialog.dart';
 import '../novedad_card.dart';
 import '../novedad_detail_dialog.dart';
-import 'novedad_form_view.dart';
 
 class NovedadesListView extends StatefulWidget {
   const NovedadesListView({
@@ -64,24 +63,37 @@ class _NovedadesListViewState extends State<NovedadesListView> {
   Widget build(BuildContext context) {
     final provider = context.watch<NovedadProvider>();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Novedades')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: widget.onCrear,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Nueva'),
-      ),
-      body: RefreshIndicator(
-        color: AppTheme.primary,
-        backgroundColor: AppTheme.surface,
-        onRefresh: provider.cargarInicial,
-        child: Column(
-          children: [
-            _FiltrosBar(provider: provider),
-            Expanded(child: _buildContenido(provider)),
-          ],
+    // IMPORTANTE — corrección de bug: este widget se embebe como `body`
+    // dentro del Scaffold de ReportesGestionScreen, que ya dibuja su propio
+    // AppBar ("Novedades") y su NavigationBar inferior. Envolver este
+    // contenido en OTRO Scaffold con OTRO AppBar producía dos barras de
+    // título apiladas verticalmente — de ahí la sensación de paneles
+    // invasivos. Ahora solo se devuelve el contenido (filtros + lista) y
+    // el botón de "Nueva" se posiciona con un Stack en vez de depender de
+    // un Scaffold propio.
+    return Stack(
+      children: [
+        RefreshIndicator(
+          color: AppTheme.primary,
+          backgroundColor: AppTheme.surface,
+          onRefresh: provider.cargarInicial,
+          child: Column(
+            children: [
+              _FiltrosBar(provider: provider),
+              Expanded(child: _buildContenido(provider)),
+            ],
+          ),
         ),
-      ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton.extended(
+            onPressed: widget.onCrear,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Nueva'),
+          ),
+        ),
+      ],
     );
   }
 

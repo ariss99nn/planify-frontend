@@ -46,6 +46,62 @@ enum ProgramaTipoFormacion {
       );
 }
 
+/// Valores de referencia aproximados por nivel, para autocompletar el
+/// formulario de creación/edición de programas.
+///
+/// IMPORTANTE: debe reflejar `Programa.PRESETS` en el backend
+/// (programa/models/programa_model.py). La validación real (la que no se
+/// puede saltar) vive en el backend; esto es solo para agilizar la carga
+/// y evitar que el usuario tenga que recordar las cifras de memoria.
+class ProgramaPreset {
+  /// Trimestres lectivos sugeridos (trimestres_totales).
+  final int trimestresTotales;
+  final int? horasLectivas;
+  final int? horasPracticas;
+  final int? horasLectivasMin;
+  final int? horasLectivasMax;
+  final int? duracionMesesAprox;
+  final bool permiteCadenaFormacion;
+  final String descripcion;
+
+  const ProgramaPreset({
+    required this.trimestresTotales,
+    this.horasLectivas,
+    this.horasPracticas,
+    this.horasLectivasMin,
+    this.horasLectivasMax,
+    this.duracionMesesAprox,
+    required this.permiteCadenaFormacion,
+    required this.descripcion,
+  });
+
+  static const Map<ProgramaNivel, ProgramaPreset> byNivel = {
+    ProgramaNivel.tecnologia: ProgramaPreset(
+      trimestresTotales: 7,
+      horasLectivas: 3120,
+      horasPracticas: 864,
+      duracionMesesAprox: 27,
+      permiteCadenaFormacion: true,
+      descripcion:
+          '≈ 9 trimestres (7 lectivos + 2 productivos) · ≈ 27 meses en total.',
+    ),
+    ProgramaNivel.tecnico: ProgramaPreset(
+      trimestresTotales: 2,
+      duracionMesesAprox: 12,
+      permiteCadenaFormacion: false,
+      descripcion: '≈ 6 meses lectivos + 6 meses productivos (≈ 12 meses).',
+    ),
+    ProgramaNivel.cursoCorto: ProgramaPreset(
+      trimestresTotales: 1,
+      horasLectivasMin: 40,
+      horasLectivasMax: 80,
+      horasPracticas: 0,
+      permiteCadenaFormacion: false,
+      descripcion: 'Entre 40 y 80 horas lectivas · sin etapa productiva.',
+    ),
+  };
+}
+
 /// Resumen de programa (coincide con ProgramaListSerializer).
 class ProgramaResumenEntity {
   final int id;

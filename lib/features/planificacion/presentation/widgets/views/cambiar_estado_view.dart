@@ -33,9 +33,9 @@ class _CambiarEstadoViewState extends State<CambiarEstadoView> {
     if (_requiereMotivo && _motivoController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:         Text('Indica el motivo del rechazo.'),
+          content: Text('Indica el motivo del rechazo.'),
           backgroundColor: Colors.redAccent,
-          behavior:        SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
@@ -60,7 +60,7 @@ class _CambiarEstadoViewState extends State<CambiarEstadoView> {
       builder: (context, provider, _) {
         return Container(
           decoration: const BoxDecoration(
-            color:        Color(0xFF0C1E29),
+            color: Color(0xFF0C1E29),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: EdgeInsets.fromLTRB(
@@ -70,16 +70,16 @@ class _CambiarEstadoViewState extends State<CambiarEstadoView> {
             MediaQuery.of(context).viewInsets.bottom + 24,
           ),
           child: Column(
-            mainAxisSize:       MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Handle
               Center(
                 child: Container(
-                  width:  40,
+                  width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color:        Colors.white.withOpacity(0.15),
+                    color: Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -92,9 +92,9 @@ class _CambiarEstadoViewState extends State<CambiarEstadoView> {
                   const Text(
                     'Cambiar estado',
                     style: TextStyle(
-                      color:      Color(0xFFEAFBF4),
+                      color: Color(0xFFEAFBF4),
                       fontWeight: FontWeight.w700,
-                      fontSize:   17,
+                      fontSize: 17,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -105,7 +105,7 @@ class _CambiarEstadoViewState extends State<CambiarEstadoView> {
               Text(
                 'Ficha ${widget.plan.fichaCodigo} · Trimestre ${widget.plan.trimestre}',
                 style: TextStyle(
-                  color:    Colors.white.withOpacity(0.4),
+                  color: Colors.white.withOpacity(0.4),
                   fontSize: 12,
                 ),
               ),
@@ -123,14 +123,14 @@ class _CambiarEstadoViewState extends State<CambiarEstadoView> {
                 Text(
                   'Selecciona el nuevo estado:',
                   style: TextStyle(
-                    color:    Colors.white.withOpacity(0.5),
+                    color: Colors.white.withOpacity(0.5),
                     fontSize: 12,
                   ),
                 ),
                 const SizedBox(height: 12),
                 ...transiciones.map(
                   (e) => _TransicionOption(
-                    estado:     e,
+                    estado: e,
                     isSelected: _estadoSeleccionado == e,
                     onTap: () => setState(() {
                       _estadoSeleccionado = e;
@@ -145,16 +145,16 @@ class _CambiarEstadoViewState extends State<CambiarEstadoView> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _motivoController,
-                    maxLines:   3,
+                    maxLines: 3,
                     style: const TextStyle(color: Color(0xFFEAFBF4)),
                     decoration: InputDecoration(
-                      labelText:         'Motivo del rechazo *',
+                      labelText: 'Motivo del rechazo *',
                       alignLabelWithHint: true,
                       prefixIcon: const Padding(
                         padding: EdgeInsets.only(bottom: 40),
-                        child:   Icon(Icons.comment_outlined),
+                        child: Icon(Icons.comment_outlined),
                       ),
-                      filled:    true,
+                      filled: true,
                       fillColor: const Color(0xFF010C12),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -178,23 +178,25 @@ class _CambiarEstadoViewState extends State<CambiarEstadoView> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: (_estadoSeleccionado == null ||
-                            provider.isSubmitting)
+                    onPressed:
+                        (_estadoSeleccionado == null || provider.isSubmitting)
                         ? null
                         : _confirmar,
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           _estadoSeleccionado == EstadoPlan.rechazado
-                              ? Colors.redAccent
-                              : const Color(0xFF35F58A),
+                          ? Colors.redAccent
+                          : const Color(0xFF35F58A),
                       foregroundColor: Colors.black,
                     ),
                     child: provider.isSubmitting
                         ? const SizedBox(
                             height: 20,
-                            width:  20,
-                            child:  CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.black),
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
                           )
                         : Text(
                             _estadoSeleccionado != null
@@ -217,7 +219,7 @@ class _CambiarEstadoViewState extends State<CambiarEstadoView> {
 
 class _TransicionOption extends StatelessWidget {
   final EstadoPlan estado;
-  final bool       isSelected;
+  final bool isSelected;
   final VoidCallback onTap;
 
   const _TransicionOption({
@@ -235,11 +237,11 @@ class _TransicionOption extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        margin:   const EdgeInsets.only(bottom: 8),
-        padding:  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
-              ? color.withOpacity(0.12)
+              ? color.withValues(alpha: 0.12)
               : Colors.white.withOpacity(0.03),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -255,9 +257,9 @@ class _TransicionOption extends StatelessWidget {
               child: Text(
                 estado.label,
                 style: TextStyle(
-                  color:      isSelected ? color : const Color(0xFFEAFBF4),
+                  color: isSelected ? color : const Color(0xFFEAFBF4),
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                  fontSize:   14,
+                  fontSize: 14,
                 ),
               ),
             ),
@@ -277,9 +279,9 @@ class _EstadoFinalBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:        Colors.blueGrey.withOpacity(0.1),
+        color: Colors.blueGrey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border:       Border.all(color: Colors.blueGrey.withOpacity(0.3)),
+        border: Border.all(color: Colors.blueGrey.withOpacity(0.3)),
       ),
       child: const Row(
         children: [

@@ -5,7 +5,10 @@ import 'package:provider/provider.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../providers/ficha_provider.dart';
 import '../../../data/models/ficha_request_model.dart';
+import '../../../../programa/domain/entities/version_programa_entity.dart';
+import '../../../../docentes/domain/entities/docente_entity.dart';
 import '../ficha_form_fields.dart';
+import '../ficha_pickers.dart';
 
 class FichaCreateView extends StatefulWidget {
   const FichaCreateView({super.key});
@@ -15,20 +18,18 @@ class FichaCreateView extends StatefulWidget {
 }
 
 class _FichaCreateViewState extends State<FichaCreateView> {
-  final _formKey          = GlobalKey<FormState>();
-  final _codigoCtrl       = TextEditingController();
-  final _versionIdCtrl    = TextEditingController();
-  final _estudiantesCtrl  = TextEditingController();
-  final _horasCtrl        = TextEditingController();
-  final _trimestreCtrl    = TextEditingController(text: '1');
-  final _jefeGrupoIdCtrl  = TextEditingController();
+  final _formKey         = GlobalKey<FormState>();
+  final _codigoCtrl      = TextEditingController();
+  final _estudiantesCtrl = TextEditingController();
 
   String    _jornada         = 'MANANA';
   String    _etapa           = 'LECTIVA';
   String    _estado          = 'ACTIVA';
   bool      _cadenaFormacion = false;
   DateTime? _fechaInicio;
-  DateTime? _fechaFinalizacion;
+
+  VersionResumenEntity? _version;
+  DocenteEntity?         _jefeGrupo;
 
   static const _jornadas = {
     'MANANA': 'Mañana', 'TARDE': 'Tarde', 'NOCHE': 'Noche', 'MIXTA': 'Mixta',
@@ -41,54 +42,45 @@ class _FichaCreateViewState extends State<FichaCreateView> {
   @override
   void dispose() {
     _codigoCtrl.dispose();
-    _versionIdCtrl.dispose();
     _estudiantesCtrl.dispose();
-    _horasCtrl.dispose();
-    _trimestreCtrl.dispose();
-    _jefeGrupoIdCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _pickFecha({required bool esInicio}) async {
+  Future<void> _pickFechaInicio() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: esInicio
-          ? (_fechaInicio ?? DateTime.now())
-          : (_fechaFinalizacion ?? (_fechaInicio ?? DateTime.now())),
+      initialDate: _fechaInicio ?? DateTime.now(),
       firstDate: DateTime(2015),
       lastDate:  DateTime(2035),
     );
     if (picked == null) return;
-    setState(() {
-      if (esInicio) {
-        _fechaInicio = picked;
-      } else {
-        _fechaFinalizacion = picked;
-      }
-    });
+    setState(() => _fechaInicio = picked);
   }
 
   String _fmtFecha(DateTime? d) {
-    if (d == null) return 'Seleccionar fecha';
+    if (d == null) return 'Hoy (por defecto)';
     return '${d.day.toString().padLeft(2, '0')}/'
         '${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  Future<void> _pickVersion() async {
+    final picked = await pickVersionPrograma(context);
+    if (picked == null) return;
+    setState(() => _version = picked);
+  }
+
+  Future<void> _pickJefeGrupo() async {
+    final picked = await pickDocente(context);
+    if (picked == null) return;
+    setState(() => _jefeGrupo = picked);
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_fechaInicio == null) {
+    if (_version == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Selecciona la fecha de inicio.'),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ));
-      return;
-    }
-    if (_fechaFinalizacion != null &&
-        _fechaFinalizacion!.isBefore(_fechaInicio!)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('La fecha de finalización no puede ser anterior al inicio.'),
+        content: Text('Selecciona el programa (versión) de la ficha.'),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
       ));
@@ -97,19 +89,14 @@ class _FichaCreateViewState extends State<FichaCreateView> {
 
     final request = FichaCreateRequest(
       codigoFicha:               _codigoCtrl.text.trim(),
-      versionId:                 int.parse(_versionIdCtrl.text.trim()),
+      versionId:                 _version!.id,
       jornada:                   _jornada,
       numeroEstudiantesEstimado: int.parse(_estudiantesCtrl.text.trim()),
       etapa:                     _etapa,
-      horasSemanalesObjetivo:    int.parse(_horasCtrl.text.trim()),
-      trimestre:                 int.parse(_trimestreCtrl.text.trim()),
       estado:                    _estado,
       cadenaFormacion:           _cadenaFormacion,
-      jefeGrupoId:               _jefeGrupoIdCtrl.text.trim().isEmpty
-          ? null
-          : int.parse(_jefeGrupoIdCtrl.text.trim()),
-      fechaInicio:               _fechaInicio!,
-      fechaFinalizacion:         _fechaFinalizacion,
+      jefeGrupoId:               _jefeGrupo?.id,
+      fechaInicio:               _fechaInicio,
     );
 
     final provider = context.read<FichaProvider>();
@@ -168,18 +155,13 @@ class _FichaCreateViewState extends State<FichaCreateView> {
                   (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
             ),
             const SizedBox(height: 14),
-            TextFormField(
-              controller: _versionIdCtrl,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              decoration: _dec('ID de versión del programa',
-                  icon: Icons.menu_book_outlined,
-                  hint: 'Selector visual pendiente (módulo programa)'),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Campo requerido';
-                if (int.tryParse(v.trim()) == null) return 'Debe ser numérico';
-                return null;
-              },
+            FichaPickerTile(
+              label: _version != null
+                  ? '${_version!.programaNombre} · v${_version!.numero}'
+                  : 'Seleccionar programa',
+              icon: Icons.menu_book_outlined,
+              tieneValor: _version != null,
+              onTap: _pickVersion,
             ),
             const SizedBox(height: 24),
 
@@ -205,49 +187,36 @@ class _FichaCreateViewState extends State<FichaCreateView> {
               onChanged: (v) => setState(() => _estado = v!),
             ),
             const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _estudiantesCtrl,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(color: AppTheme.textPrimary),
-                    decoration: _dec('Cupo estimado', icon: Icons.people_outline),
-                    validator: (v) {
-                      final n = int.tryParse(v?.trim() ?? '');
-                      if (n == null || n <= 0) return '> 0';
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _horasCtrl,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(color: AppTheme.textPrimary),
-                    decoration: _dec('Horas/semana', icon: Icons.schedule),
-                    validator: (v) {
-                      final n = int.tryParse(v?.trim() ?? '');
-                      if (n == null || n <= 0) return '> 0';
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
             TextFormField(
-              controller: _trimestreCtrl,
+              controller: _estudiantesCtrl,
               keyboardType: TextInputType.number,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              decoration:
-                  _dec('Trimestre inicial', icon: Icons.calendar_view_month),
+              enabled: !_cadenaFormacion,
+              style: TextStyle(
+                  color: _cadenaFormacion
+                      ? AppTheme.textSecondary
+                      : AppTheme.textPrimary),
+              decoration: _dec('Cupo estimado', icon: Icons.people_outline)
+                  .copyWith(
+                helperText: _cadenaFormacion
+                    ? 'En cadena de formación el cupo se gestiona por '
+                        'trimestre, no aquí.'
+                    : null,
+              ),
               validator: (v) {
+                if (_cadenaFormacion) return null;
                 final n = int.tryParse(v?.trim() ?? '');
-                if (n == null || n < 1) return 'Debe ser ≥ 1';
+                if (n == null || n <= 0) return '> 0';
                 return null;
               },
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Las horas/semana y la fecha fin estimada se calculan '
+              'automáticamente a partir de las horas del programa y su '
+              'nivel de formación.',
+              style: TextStyle(
+                  color: AppTheme.textSecondary.withOpacity(0.6),
+                  fontSize: 11),
             ),
             const SizedBox(height: 14),
             Container(
@@ -263,52 +232,42 @@ class _FichaCreateViewState extends State<FichaCreateView> {
                     style:
                         TextStyle(color: AppTheme.textPrimary, fontSize: 14)),
                 subtitle: Text(
-                  'El programa debe tener trimestres de cadena configurados.',
+                  'Solo se define aquí; no podrá cambiarse después de crear '
+                  'la ficha. El programa debe tener trimestres de cadena '
+                  'configurados.',
                   style: TextStyle(
                       color: AppTheme.textSecondary.withOpacity(0.6),
                       fontSize: 11),
                 ),
-                value:     _cadenaFormacion,
-                onChanged: (v) => setState(() => _cadenaFormacion = v),
+                value: _cadenaFormacion,
+                onChanged: (v) => setState(() {
+                  _cadenaFormacion = v;
+                  // Para esta modalidad el cupo lo gestiona el backend por
+                  // trimestre: el campo se bloquea y se envía en 0.
+                  if (v) {
+                    _estudiantesCtrl.text = '0';
+                  } else if (_estudiantesCtrl.text.trim() == '0') {
+                    _estudiantesCtrl.text = '';
+                  }
+                }),
               ),
             ),
             const SizedBox(height: 24),
 
             const FichaSeccionLabel('Jefe de grupo (opcional)'),
-            TextFormField(
-              controller: _jefeGrupoIdCtrl,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              decoration: _dec('ID del docente',
-                  icon: Icons.person_outline,
-                  hint: 'Selector visual pendiente (módulo docentes)'),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return null;
-                if (int.tryParse(v.trim()) == null) return 'Debe ser numérico';
-                return null;
-              },
+            FichaPickerTile(
+              label: _jefeGrupo?.nombre ?? 'Seleccionar docente',
+              icon: Icons.person_outline,
+              tieneValor: _jefeGrupo != null,
+              onTap: _pickJefeGrupo,
             ),
             const SizedBox(height: 24),
 
             const FichaSeccionLabel('Fechas'),
-            Row(
-              children: [
-                Expanded(
-                  child: FichaFechaTile(
-                    label: 'Inicio',
-                    value: _fmtFecha(_fechaInicio),
-                    onTap: () => _pickFecha(esInicio: true),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FichaFechaTile(
-                    label: 'Fin estimado',
-                    value: _fmtFecha(_fechaFinalizacion),
-                    onTap: () => _pickFecha(esInicio: false),
-                  ),
-                ),
-              ],
+            FichaFechaTile(
+              label: 'Inicio',
+              value: _fmtFecha(_fechaInicio),
+              onTap: _pickFechaInicio,
             ),
             const SizedBox(height: 32),
 

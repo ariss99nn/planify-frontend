@@ -45,7 +45,6 @@ class FichaEstudianteRepositoryImpl implements FichaEstudianteRepository {
     final model = await _datasource.addEstudiante(
       fichaId,
       estudianteId: request.estudianteId,
-      esCadena:     request.esCadena,
     );
     return model.toEntity();
   }

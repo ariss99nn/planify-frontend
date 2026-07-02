@@ -91,4 +91,13 @@ class UserService {
       token: token,
     );
   }
+
+  static Future<dynamic> getUsersEstudiantes({String? search}) async {
+    final token = await TokenStorage.getAccessToken();
+    final query = (search == null || search.isEmpty) ? '' : '&search=$search';
+    return ApiService.get(
+      '/users/?rol=ESTUDIANTE&is_active=true$query',
+      token: token,
+    );
+  }
 }

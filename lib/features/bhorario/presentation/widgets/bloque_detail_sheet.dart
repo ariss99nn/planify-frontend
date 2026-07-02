@@ -6,9 +6,9 @@ import '../../data/models/bloque_horario_model.dart';
 
 class BloqueDetailSheet extends StatelessWidget {
   final BloqueHorarioModel bloque;
-  final bool               isManager;
-  final VoidCallback?      onEdit;
-  final VoidCallback?      onDelete;
+  final bool isManager;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const BloqueDetailSheet({
     super.key,
@@ -20,9 +20,9 @@ class BloqueDetailSheet extends StatelessWidget {
 
   static Color _jornadaColor(String j) => switch (j) {
     'MANANA' => AppTheme.primary,
-    'TARDE'  => AppTheme.accent,
-    'NOCHE'  => const Color(0xFF8B5CF6),
-    _        => const Color(0xFFF59E0B),
+    'TARDE' => AppTheme.accent,
+    'NOCHE' => const Color(0xFF8B5CF6),
+    _ => const Color(0xFFF59E0B),
   };
 
   @override
@@ -31,11 +31,11 @@ class BloqueDetailSheet extends StatelessWidget {
 
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
-      minChildSize:     0.4,
-      maxChildSize:     0.92,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
       builder: (_, ctrl) => Container(
         decoration: const BoxDecoration(
-          color:        AppTheme.surface,
+          color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
@@ -44,10 +44,12 @@ class BloqueDetailSheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                    color: AppTheme.border,
-                    borderRadius: BorderRadius.circular(2)),
+                  color: AppTheme.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
 
@@ -59,11 +61,14 @@ class BloqueDetailSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color:        jColor.withOpacity(0.12),
+                      color: jColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.schedule_rounded,
-                        color: jColor, size: 22),
+                    child: Icon(
+                      Icons.schedule_rounded,
+                      color: jColor,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -73,9 +78,10 @@ class BloqueDetailSheet extends StatelessWidget {
                         Text(
                           bloque.diaSemanaDisplay,
                           style: const TextStyle(
-                              color:      AppTheme.textPrimary,
-                              fontSize:   20,
-                              fontWeight: FontWeight.bold),
+                            color: AppTheme.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         Text(
                           bloque.rangoHoras,
@@ -87,14 +93,18 @@ class BloqueDetailSheet extends StatelessWidget {
                   if (isManager) ...[
                     IconButton(
                       onPressed: onEdit,
-                      icon: const Icon(Icons.edit_outlined,
-                          color: AppTheme.accent),
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        color: AppTheme.accent,
+                      ),
                       tooltip: 'Editar',
                     ),
                     IconButton(
                       onPressed: () => _confirmarEliminar(context),
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.redAccent),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                      ),
                       tooltip: 'Eliminar',
                     ),
                   ],
@@ -113,12 +123,21 @@ class BloqueDetailSheet extends StatelessWidget {
                   _Seccion(
                     titulo: 'Bloque',
                     filas: [
-                      _Fila(Icons.calendar_today_outlined,
-                          'Día', bloque.diaSemanaDisplay),
-                      _Fila(Icons.access_time_rounded,
-                          'Horario', bloque.rangoHoras),
-                      _Fila(Icons.wb_sunny_outlined,
-                          'Jornada', bloque.jornadaDisplay),
+                      _Fila(
+                        Icons.calendar_today_outlined,
+                        'Día',
+                        bloque.diaSemanaDisplay,
+                      ),
+                      _Fila(
+                        Icons.access_time_rounded,
+                        'Horario',
+                        bloque.rangoHoras,
+                      ),
+                      _Fila(
+                        Icons.wb_sunny_outlined,
+                        'Jornada',
+                        bloque.jornadaDisplay,
+                      ),
                       _Fila(
                         Icons.repeat_rounded,
                         'Recurrencia',
@@ -140,11 +159,17 @@ class BloqueDetailSheet extends StatelessWidget {
                     _Seccion(
                       titulo: 'Docente',
                       filas: [
-                        _Fila(Icons.person_rounded,
-                            'Nombre', bloque.docenteNombre!),
+                        _Fila(
+                          Icons.person_rounded,
+                          'Nombre',
+                          bloque.docenteNombre!,
+                        ),
                         if (bloque.docenteEmail != null)
-                          _Fila(Icons.email_outlined,
-                              'Correo', bloque.docenteEmail!),
+                          _Fila(
+                            Icons.email_outlined,
+                            'Correo',
+                            bloque.docenteEmail!,
+                          ),
                       ],
                     ),
                   ],
@@ -153,11 +178,17 @@ class BloqueDetailSheet extends StatelessWidget {
                     _Seccion(
                       titulo: 'Aula',
                       filas: [
-                        _Fila(Icons.meeting_room_outlined,
-                            'Código', bloque.aulaCodigo!),
+                        _Fila(
+                          Icons.meeting_room_outlined,
+                          'Código',
+                          bloque.aulaCodigo!,
+                        ),
                         if (bloque.aulaTipo != null)
-                          _Fila(Icons.category_outlined,
-                              'Tipo', bloque.aulaTipo!),
+                          _Fila(
+                            Icons.category_outlined,
+                            'Tipo',
+                            bloque.aulaTipo!,
+                          ),
                       ],
                     ),
                   ],
@@ -166,11 +197,17 @@ class BloqueDetailSheet extends StatelessWidget {
                     _Seccion(
                       titulo: 'Ficha',
                       filas: [
-                        _Fila(Icons.group_outlined,
-                            'Código', bloque.fichaCodigo!),
+                        _Fila(
+                          Icons.group_outlined,
+                          'Código',
+                          bloque.fichaCodigo!,
+                        ),
                         if (bloque.fichaPrograma != null)
-                          _Fila(Icons.school_outlined,
-                              'Programa', bloque.fichaPrograma!),
+                          _Fila(
+                            Icons.school_outlined,
+                            'Programa',
+                            bloque.fichaPrograma!,
+                          ),
                       ],
                     ),
                   ],
@@ -179,8 +216,11 @@ class BloqueDetailSheet extends StatelessWidget {
                     _Seccion(
                       titulo: 'Competencia',
                       filas: [
-                        _Fila(Icons.book_outlined,
-                            'Nombre', bloque.competenciaNombre!),
+                        _Fila(
+                          Icons.book_outlined,
+                          'Nombre',
+                          bloque.competenciaNombre!,
+                        ),
                       ],
                     ),
                   ],
@@ -199,10 +239,11 @@ class BloqueDetailSheet extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppTheme.surface,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
-        title: const Text('Eliminar bloque',
-            style: TextStyle(color: AppTheme.textPrimary)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Eliminar bloque',
+          style: TextStyle(color: AppTheme.textPrimary),
+        ),
         content: Text(
           'Se eliminará el bloque del ${bloque.diaSemanaDisplay} '
           '(${bloque.rangoHoras}). Esta acción no se puede deshacer.',
@@ -210,8 +251,9 @@ class BloqueDetailSheet extends StatelessWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
@@ -220,7 +262,7 @@ class BloqueDetailSheet extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
-              minimumSize:     Size.zero,
+              minimumSize: Size.zero,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
             child: const Text('Eliminar'),
@@ -234,8 +276,8 @@ class BloqueDetailSheet extends StatelessWidget {
 // ── Helpers de layout ─────────────────────────────────────────────────────
 
 class _Seccion extends StatelessWidget {
-  final String       titulo;
-  final List<_Fila>  filas;
+  final String titulo;
+  final List<_Fila> filas;
   const _Seccion({required this.titulo, required this.filas});
 
   @override
@@ -246,8 +288,8 @@ class _Seccion extends StatelessWidget {
         Text(
           titulo.toUpperCase(),
           style: const TextStyle(
-            color:      AppTheme.primary,
-            fontSize:   11,
+            color: AppTheme.primary,
+            fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
           ),
@@ -255,19 +297,28 @@ class _Seccion extends StatelessWidget {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color:        AppTheme.surfaceLight,
+            color: AppTheme.surfaceLight,
             borderRadius: BorderRadius.circular(14),
-            border:       Border.all(color: AppTheme.border),
+            border: Border.all(color: AppTheme.border),
           ),
           child: Column(
-            children: filas.asMap().entries.map((e) => Column(
-              children: [
-                e.value,
-                if (e.key < filas.length - 1)
-                  const Divider(
-                      color: AppTheme.border, height: 1, indent: 48),
-              ],
-            )).toList(),
+            children: filas
+                .asMap()
+                .entries
+                .map(
+                  (e) => Column(
+                    children: [
+                      e.value,
+                      if (e.key < filas.length - 1)
+                        const Divider(
+                          color: AppTheme.border,
+                          height: 1,
+                          indent: 48,
+                        ),
+                    ],
+                  ),
+                )
+                .toList(),
           ),
         ),
       ],
@@ -277,9 +328,9 @@ class _Seccion extends StatelessWidget {
 
 class _Fila extends StatelessWidget {
   final IconData icon;
-  final String   etiqueta;
-  final String   valor;
-  final Color?   valorColor;
+  final String etiqueta;
+  final String valor;
+  final Color? valorColor;
 
   const _Fila(this.icon, this.etiqueta, this.valor, {this.valorColor});
 
@@ -291,17 +342,18 @@ class _Fila extends StatelessWidget {
         children: [
           Icon(icon, size: 17, color: AppTheme.textSecondary),
           const SizedBox(width: 12),
-          Text(etiqueta,
-              style: const TextStyle(
-                  color: AppTheme.textSecondary, fontSize: 14)),
+          Text(
+            etiqueta,
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+          ),
           const Spacer(),
           Flexible(
             child: Text(
               valor,
               textAlign: TextAlign.end,
               style: TextStyle(
-                color:      valorColor ?? AppTheme.textPrimary,
-                fontSize:   14,
+                color: valorColor ?? AppTheme.textPrimary,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),

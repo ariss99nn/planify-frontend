@@ -5,6 +5,7 @@ import '../providers/user_provider.dart';
 import '../../../core/api/api_service.dart';
 import '../../../core/theme/theme.dart';
 import '../../auth/models/user_model.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class UserListScreen extends StatefulWidget {
   const UserListScreen({super.key});
@@ -30,32 +31,47 @@ class _UserListScreenState extends State<UserListScreen> {
 
   String _rolLabel(String rol) {
     switch (rol) {
-      case 'ADMINISTRATIVO': return 'Administrativo';
-      case 'COORDINADOR':    return 'Coordinador';
-      case 'DOCENTE':        return 'Docente';
-      case 'ESTUDIANTE':     return 'Estudiante';
-      default:               return rol;
+      case 'ADMINISTRATIVO':
+        return 'Administrativo';
+      case 'COORDINADOR':
+        return 'Coordinador';
+      case 'DOCENTE':
+        return 'Docente';
+      case 'ESTUDIANTE':
+        return 'Estudiante';
+      default:
+        return rol;
     }
   }
 
   // 👇 Gama de verdes acorde al tema cyber
   Color _rolColor(String rol) {
     switch (rol) {
-      case 'ADMINISTRATIVO': return const Color(0xFF35F58A); // verde neón principal
-      case 'COORDINADOR':    return const Color(0xFF14C768); // verde medio
-      case 'DOCENTE':        return const Color(0xFF0E9E52); // verde oscuro
-      case 'ESTUDIANTE':     return const Color(0xFF1D7A45); // verde bosque
-      default:               return AppTheme.textSecondary;
+      case 'ADMINISTRATIVO':
+        return const Color(0xFF35F58A); // verde neón principal
+      case 'COORDINADOR':
+        return const Color(0xFF14C768); // verde medio
+      case 'DOCENTE':
+        return const Color(0xFF0E9E52); // verde oscuro
+      case 'ESTUDIANTE':
+        return const Color(0xFF1D7A45); // verde bosque
+      default:
+        return AppTheme.textSecondary;
     }
   }
 
   IconData _rolIcon(String rol) {
     switch (rol) {
-      case 'ADMINISTRATIVO': return Icons.admin_panel_settings;
-      case 'COORDINADOR':    return Icons.manage_accounts;
-      case 'DOCENTE':        return Icons.school;
-      case 'ESTUDIANTE':     return Icons.person;
-      default:               return Icons.help_outline;
+      case 'ADMINISTRATIVO':
+        return Icons.admin_panel_settings;
+      case 'COORDINADOR':
+        return Icons.manage_accounts;
+      case 'DOCENTE':
+        return Icons.school;
+      case 'ESTUDIANTE':
+        return Icons.person;
+      default:
+        return Icons.help_outline;
     }
   }
 
@@ -93,7 +109,7 @@ class _UserListScreenState extends State<UserListScreen> {
 
   Widget _inicialAvatar(String iniciales, Color rolColor) {
     return Container(
-      color: rolColor.withOpacity(0.12),
+      color: rolColor.withValues(alpha: 0.12),
       child: Center(
         child: Text(
           iniciales.isNotEmpty ? iniciales : '?',
@@ -111,7 +127,11 @@ class _UserListScreenState extends State<UserListScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.person_off_outlined, color: Colors.red, size: 40),
+        icon: const Icon(
+          Icons.person_off_outlined,
+          color: Colors.red,
+          size: 40,
+        ),
         title: const Text('Desactivar usuario'),
         content: Text(
           '¿Estás seguro de desactivar a ${user.nombre} ${user.apellido}?\n\nEl usuario no podrá iniciar sesión.',
@@ -126,8 +146,10 @@ class _UserListScreenState extends State<UserListScreen> {
               Navigator.pop(ctx);
               _deactivateUser(user.id);
             },
-            child: const Text('Desactivar',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Desactivar',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -138,7 +160,11 @@ class _UserListScreenState extends State<UserListScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.person_add_outlined, color: Colors.green, size: 40),
+        icon: const Icon(
+          Icons.person_add_outlined,
+          color: Colors.green,
+          size: 40,
+        ),
         title: const Text('Activar usuario'),
         content: Text(
           '¿Estás seguro de activar a ${user.nombre} ${user.apellido}?\n\nEl usuario podrá iniciar sesión nuevamente.',
@@ -153,8 +179,13 @@ class _UserListScreenState extends State<UserListScreen> {
               Navigator.pop(ctx);
               _activateUser(user.id);
             },
-            child: const Text('Activar',
-                style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Activar',
+              style: TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -225,6 +256,7 @@ class _UserListScreenState extends State<UserListScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<UserProvider>();
+    final currentUserId = context.watch<AuthProvider>().user?.id;
 
     return Scaffold(
       // 👇 AppBar con color oscuro del tema y tipografía seria
@@ -243,16 +275,14 @@ class _UserListScreenState extends State<UserListScreen> {
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            color: AppTheme.border,
-          ),
+          child: Container(height: 1, color: AppTheme.border),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.primary),
-            onPressed: () =>
-                context.read<UserProvider>().fetchUsers(search: searchCtrl.text),
+            onPressed: () => context.read<UserProvider>().fetchUsers(
+              search: searchCtrl.text,
+            ),
             tooltip: 'Recargar',
           ),
         ],
@@ -274,7 +304,9 @@ class _UserListScreenState extends State<UserListScreen> {
                 style: const TextStyle(color: AppTheme.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Buscar usuarios...',
-                  hintStyle: TextStyle(color: AppTheme.textSecondary.withOpacity(0.5)),
+                  hintStyle: TextStyle(
+                    color: AppTheme.textSecondary.withOpacity(0.5),
+                  ),
                   prefixIcon: const Icon(Icons.search, color: AppTheme.primary),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -292,7 +324,9 @@ class _UserListScreenState extends State<UserListScreen> {
                   ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
                 onSubmitted: (value) =>
                     context.read<UserProvider>().fetchUsers(search: value),
@@ -326,18 +360,27 @@ class _UserListScreenState extends State<UserListScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.people_outline,
-                        size: 64, color: AppTheme.primary.withOpacity(0.4)),
+                    Icon(
+                      Icons.people_outline,
+                      size: 64,
+                      color: AppTheme.primary.withOpacity(0.4),
+                    ),
                     const SizedBox(height: 16),
-                    Text('No hay usuarios',
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: AppTheme.textSecondary.withOpacity(0.7))),
+                    Text(
+                      'No hay usuarios',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: AppTheme.textSecondary.withOpacity(0.7),
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Text('Prueba con otra búsqueda',
-                        style: TextStyle(
-                            fontSize: 14,
-                            color: AppTheme.textSecondary.withOpacity(0.5))),
+                    Text(
+                      'Prueba con otra búsqueda',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.textSecondary.withOpacity(0.5),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -345,14 +388,20 @@ class _UserListScreenState extends State<UserListScreen> {
           else
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 itemCount: provider.users.length,
                 itemBuilder: (_, i) {
                   final u = provider.users[i];
                   final rolColor = _rolColor(u.rol);
 
                   return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 5,
+                      horizontal: 4,
+                    ),
                     decoration: BoxDecoration(
                       // 👇 muy transparente
                       color: AppTheme.surface.withOpacity(0.25),
@@ -363,7 +412,9 @@ class _UserListScreenState extends State<UserListScreen> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       child: Row(
                         children: [
                           _buildAvatar(u),
@@ -386,7 +437,9 @@ class _UserListScreenState extends State<UserListScreen> {
                                   u.email,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: AppTheme.textSecondary.withOpacity(0.6),
+                                    color: AppTheme.textSecondary.withOpacity(
+                                      0.6,
+                                    ),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -396,18 +449,26 @@ class _UserListScreenState extends State<UserListScreen> {
                                     // Badge rol
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: rolColor.withOpacity(0.1),
+                                        color: rolColor.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
-                                            color: rolColor.withOpacity(0.4)),
+                                          color: rolColor.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                        ),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(_rolIcon(u.rol),
-                                              size: 12, color: rolColor),
+                                          Icon(
+                                            _rolIcon(u.rol),
+                                            size: 12,
+                                            color: rolColor,
+                                          ),
                                           const SizedBox(width: 4),
                                           Text(
                                             _rolLabel(u.rol),
@@ -425,7 +486,9 @@ class _UserListScreenState extends State<UserListScreen> {
                                     // Badge activo/inactivo
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: u.isActive
                                             ? AppTheme.primary.withOpacity(0.1)
@@ -433,7 +496,9 @@ class _UserListScreenState extends State<UserListScreen> {
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
                                           color: u.isActive
-                                              ? AppTheme.primary.withOpacity(0.4)
+                                              ? AppTheme.primary.withOpacity(
+                                                  0.4,
+                                                )
                                               : Colors.red.withOpacity(0.4),
                                         ),
                                       ),
@@ -455,34 +520,63 @@ class _UserListScreenState extends State<UserListScreen> {
                           ),
 
                           // ── Botones de acción ──────────────────
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _ActionButton(
-                                icon: Icons.edit_outlined,
-                                color: AppTheme.primary,
-                                tooltip: 'Editar',
-                                onTap: () => _goToEdit(u.id),
-                              ),
-                              const SizedBox(height: 6),
-                              if (u.isActive)
-                                _ActionButton(
-                                  icon: Icons.person_off_outlined,
-                                  color: Colors.red.shade400,
-                                  tooltip: 'Desactivar',
-                                  onTap: () =>
-                                      _showDeactivateConfirmDialog(context, u),
-                                )
-                              else
-                                _ActionButton(
-                                  icon: Icons.person_add_outlined,
-                                  color: AppTheme.primary,
-                                  tooltip: 'Activar',
-                                  onTap: () =>
-                                      _showActivateConfirmDialog(context, u),
+                          // El usuario en sesión no se edita ni se
+                          // desactiva a sí mismo desde este panel: eso se
+                          // hace desde "Editar perfil".
+                          if (u.id == currentUserId)
+                            Tooltip(
+                              message: 'Edita tu cuenta desde tu perfil',
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
                                 ),
-                            ],
-                          ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: AppTheme.primary.withOpacity(0.4),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Tú',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _ActionButton(
+                                  icon: Icons.edit_outlined,
+                                  color: AppTheme.primary,
+                                  tooltip: 'Editar',
+                                  onTap: () => _goToEdit(u.id),
+                                ),
+                                const SizedBox(height: 6),
+                                if (u.isActive)
+                                  _ActionButton(
+                                    icon: Icons.person_off_outlined,
+                                    color: Colors.red.shade400,
+                                    tooltip: 'Desactivar',
+                                    onTap: () => _showDeactivateConfirmDialog(
+                                        context, u),
+                                  )
+                                else
+                                  _ActionButton(
+                                    icon: Icons.person_add_outlined,
+                                    color: AppTheme.primary,
+                                    tooltip: 'Activar',
+                                    onTap: () => _showActivateConfirmDialog(
+                                        context, u),
+                                  ),
+                              ],
+                            ),
                         ],
                       ),
                     ),
@@ -494,7 +588,7 @@ class _UserListScreenState extends State<UserListScreen> {
       ),
 
       floatingActionButton: FloatingActionButton(
-        heroTag: 'fab_users', 
+        heroTag: 'fab_users',
         onPressed: () async {
           await Navigator.pushNamed(context, '/users/create');
           if (!mounted) return;
@@ -532,9 +626,9 @@ class _ActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.3)),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Icon(icon, size: 18, color: color),
         ),

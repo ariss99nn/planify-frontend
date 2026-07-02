@@ -47,6 +47,24 @@ class _FichaDetailViewState extends State<FichaDetailView>
   Future<void> _showCambiarEtapa(FichaEntity ficha) async {
     if (ficha.esProductiva) return;
 
+    // El paso a Productiva solo se permite si ya se cumplió el tiempo de
+    // la etapa lectiva (no quedan trimestres pendientes). El backend valida
+    // lo mismo; aquí evitamos el viaje de red si claramente no aplica.
+    final restantes = ficha.trimestresRestantes;
+    final lectivaCumplida = restantes != null && restantes <= 0;
+
+    if (!lectivaCumplida) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          'Aún no se puede pasar a Productiva: '
+          '${restantes != null ? "quedan $restantes trimestre(s) de la etapa lectiva." : "no se ha cumplido el tiempo de la etapa lectiva."}',
+        ),
+        backgroundColor: Colors.orange.shade800,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -75,7 +93,7 @@ class _FichaDetailViewState extends State<FichaDetailView>
     final provider = context.read<FichaProvider>();
     final result = await provider.updateEtapa(
       ficha.id,
-      EtapaUpdateRequest(etapa: 'PRODUCTIVA', trimestre: ficha.trimestre),
+      const EtapaUpdateRequest(etapa: 'PRODUCTIVA'),
     );
 
     if (!mounted) return;

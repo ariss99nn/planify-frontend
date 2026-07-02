@@ -19,13 +19,13 @@ class FichaListView extends StatefulWidget {
 }
 
 class _FichaListViewState extends State<FichaListView> {
-  final _searchCtrl  = TextEditingController();
-  final _scrollCtrl  = ScrollController();
+  final _searchCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
 
   String? _filtroEtapa;
   String? _filtroJornada;
   String? _filtroEstado;
-  bool?   _filtroCadena;
+  bool? _filtroCadena;
 
   @override
   void initState() {
@@ -50,26 +50,26 @@ class _FichaListViewState extends State<FichaListView> {
 
   void _applyFilters() {
     context.read<FichaProvider>().fetchFichas(
-      search:          _searchCtrl.text,
-      etapa:           _filtroEtapa,
-      jornada:         _filtroJornada,
-      estado:          _filtroEstado,
+      search: _searchCtrl.text,
+      etapa: _filtroEtapa,
+      jornada: _filtroJornada,
+      estado: _filtroEstado,
       cadenaFormacion: _filtroCadena,
     );
   }
 
   int get _filtrosActivos => [
-        _filtroEtapa,
-        _filtroJornada,
-        _filtroEstado,
-        if (_filtroCadena != null) 'x',
-      ].where((e) => e != null).length;
+    _filtroEtapa,
+    _filtroJornada,
+    _filtroEstado,
+    if (_filtroCadena != null) 'x',
+  ].where((e) => e != null).length;
 
   void _showFiltros() {
-    String? etapa   = _filtroEtapa;
+    String? etapa = _filtroEtapa;
     String? jornada = _filtroJornada;
-    String? estado  = _filtroEstado;
-    bool?   cadena  = _filtroCadena;
+    String? estado = _filtroEstado;
+    bool? cadena = _filtroCadena;
 
     showModalBottomSheet(
       context: context,
@@ -87,7 +87,8 @@ class _FichaListViewState extends State<FichaListView> {
             children: [
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: AppTheme.border,
                     borderRadius: BorderRadius.circular(2),
@@ -95,17 +96,22 @@ class _FichaListViewState extends State<FichaListView> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text('FILTROS',
-                  style: TextStyle(
-                    color: AppTheme.primary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 3,
-                    fontSize: 13,
-                  )),
+              const Text(
+                'FILTROS',
+                style: TextStyle(
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 3,
+                  fontSize: 13,
+                ),
+              ),
               const SizedBox(height: 20),
               _FiltroChips(
                 label: 'Etapa',
-                opciones: const {'LECTIVA': 'Lectiva', 'PRODUCTIVA': 'Productiva'},
+                opciones: const {
+                  'LECTIVA': 'Lectiva',
+                  'PRODUCTIVA': 'Productiva',
+                },
                 seleccionado: etapa,
                 onSelected: (v) => setModal(() => etapa = v),
               ),
@@ -135,8 +141,13 @@ class _FichaListViewState extends State<FichaListView> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  const Text('Cadena de formación',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                  const Text(
+                    'Cadena de formación',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
                   const Spacer(),
                   _TriSwitch(
                     value: cadena,
@@ -161,10 +172,10 @@ class _FichaListViewState extends State<FichaListView> {
                     child: ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          _filtroEtapa   = etapa;
+                          _filtroEtapa = etapa;
                           _filtroJornada = jornada;
-                          _filtroEstado  = estado;
-                          _filtroCadena  = cadena;
+                          _filtroEstado = estado;
+                          _filtroCadena = cadena;
                         });
                         Navigator.pop(ctx);
                         _applyFilters();
@@ -224,13 +235,19 @@ class _FichaListViewState extends State<FichaListView> {
                     decoration: InputDecoration(
                       hintText: 'Buscar por código o programa...',
                       hintStyle: TextStyle(
-                          color: AppTheme.textSecondary.withOpacity(0.5)),
-                      prefixIcon: const Icon(Icons.search, color: AppTheme.primary),
+                        color: AppTheme.textSecondary.withOpacity(0.5),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppTheme.primary,
+                      ),
                       suffixIcon: IconButton(
-                        icon: Icon(Icons.clear,
-                            color: _searchCtrl.text.isEmpty
-                                ? AppTheme.textSecondary.withOpacity(0.3)
-                                : AppTheme.primary),
+                        icon: Icon(
+                          Icons.clear,
+                          color: _searchCtrl.text.isEmpty
+                              ? AppTheme.textSecondary.withOpacity(0.3)
+                              : AppTheme.primary,
+                        ),
                         onPressed: () {
                           if (_searchCtrl.text.isNotEmpty) {
                             _searchCtrl.clear();
@@ -240,7 +257,9 @@ class _FichaListViewState extends State<FichaListView> {
                       ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                     onSubmitted: (_) => _applyFilters(),
                   ),
@@ -255,17 +274,24 @@ class _FichaListViewState extends State<FichaListView> {
                   ),
                   if (_filtrosActivos > 0)
                     Positioned(
-                      right: 8, top: 8,
+                      right: 8,
+                      top: 8,
                       child: Container(
-                        width: 16, height: 16,
+                        width: 16,
+                        height: 16,
                         decoration: const BoxDecoration(
-                            color: AppTheme.primary, shape: BoxShape.circle),
+                          color: AppTheme.primary,
+                          shape: BoxShape.circle,
+                        ),
                         child: Center(
-                          child: Text('$_filtrosActivos',
-                              style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black)),
+                          child: Text(
+                            '$_filtrosActivos',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -273,9 +299,9 @@ class _FichaListViewState extends State<FichaListView> {
               ),
               IconButton(
                 icon: const Icon(Icons.refresh, color: AppTheme.primary),
-                onPressed: () => context
-                    .read<FichaProvider>()
-                    .fetchFichas(search: _searchCtrl.text),
+                onPressed: () => context.read<FichaProvider>().fetchFichas(
+                  search: _searchCtrl.text,
+                ),
               ),
             ],
           ),
@@ -304,13 +330,20 @@ class _FichaListViewState extends State<FichaListView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline,
-                      size: 48, color: Colors.redAccent),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.redAccent,
+                  ),
                   const SizedBox(height: 12),
-                  Text(provider.fichasError!,
-                      textAlign: TextAlign.center,
-                      style:
-                          const TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                  Text(
+                    provider.fichasError!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: _applyFilters,
@@ -333,13 +366,15 @@ class _FichaListViewState extends State<FichaListView> {
           Expanded(
             child: RefreshIndicator(
               color: AppTheme.primary,
-              onRefresh: () => context
-                  .read<FichaProvider>()
-                  .fetchFichas(search: _searchCtrl.text),
+              onRefresh: () => context.read<FichaProvider>().fetchFichas(
+                search: _searchCtrl.text,
+              ),
               child: ListView.builder(
                 controller: _scrollCtrl,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 itemCount:
                     provider.fichas.length + (provider.hayMasPaginas ? 1 : 0),
                 itemBuilder: (_, i) {
@@ -370,8 +405,10 @@ class _FichaListViewState extends State<FichaListView> {
                 backgroundColor: AppTheme.primary,
                 foregroundColor: Colors.black,
                 icon: const Icon(Icons.add),
-                label: const Text('Nueva ficha',
-                    style: TextStyle(fontWeight: FontWeight.w700)),
+                label: const Text(
+                  'Nueva ficha',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ),
@@ -392,10 +429,14 @@ class _FichaCard extends StatelessWidget {
 
   Color get _estadoColor {
     switch (ficha.estado) {
-      case 'ACTIVA':   return AppTheme.primary;
-      case 'INACTIVA': return Colors.orange;
-      case 'CERRADA':  return Colors.red.shade400;
-      default:         return AppTheme.textSecondary;
+      case 'ACTIVA':
+        return AppTheme.primary;
+      case 'INACTIVA':
+        return Colors.orange;
+      case 'CERRADA':
+        return Colors.red.shade400;
+      default:
+        return AppTheme.textSecondary;
     }
   }
 
@@ -420,39 +461,54 @@ class _FichaCard extends StatelessWidget {
                   _Badge(label: ficha.codigoFicha, color: AppTheme.primary),
                   const SizedBox(width: 8),
                   if (ficha.cadenaFormacion)
-                    _Badge(label: 'Cadena', color: AppTheme.accent, icon: Icons.link),
+                    _Badge(
+                      label: 'Cadena',
+                      color: AppTheme.accent,
+                      icon: Icons.link,
+                    ),
                   const Spacer(),
                   _Badge(label: ficha.estado, color: _estadoColor),
                 ],
               ),
               const SizedBox(height: 10),
-              Text(ficha.programaNombre,
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  )),
+              Text(
+                ficha.programaNombre,
+                style: const TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text('v${ficha.versionNumero} · ${ficha.jornadaDisplay}',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary.withOpacity(0.7))),
+              Text(
+                'v${ficha.versionNumero} · ${ficha.jornadaDisplay}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary.withOpacity(0.7),
+                ),
+              ),
               const SizedBox(height: 10),
               Row(
                 children: [
                   _Badge(label: ficha.etapaDisplay, color: _etapaColor),
                   const SizedBox(width: 6),
-                  _Badge(label: 'T${ficha.trimestre}', color: AppTheme.textSecondary),
+                  _Badge(
+                    label: 'T${ficha.trimestre}',
+                    color: AppTheme.textSecondary,
+                  ),
                   const Spacer(),
-                  Icon(Icons.people_outline,
-                      size: 14,
-                      color: AppTheme.textSecondary.withOpacity(0.7)),
+                  Icon(
+                    Icons.people_outline,
+                    size: 14,
+                    color: AppTheme.textSecondary.withOpacity(0.7),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${ficha.numeroEstudiantesReal}/${ficha.numeroEstudiantesEstimado}',
                     style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary.withOpacity(0.7)),
+                      fontSize: 12,
+                      color: AppTheme.textSecondary.withOpacity(0.7),
+                    ),
                   ),
                 ],
               ),
@@ -460,14 +516,19 @@ class _FichaCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.person_outline,
-                        size: 13,
-                        color: AppTheme.textSecondary.withOpacity(0.5)),
+                    Icon(
+                      Icons.person_outline,
+                      size: 13,
+                      color: AppTheme.textSecondary.withOpacity(0.5),
+                    ),
                     const SizedBox(width: 4),
-                    Text(ficha.jefeGrupoNombre!,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textSecondary.withOpacity(0.5))),
+                    Text(
+                      ficha.jefeGrupoNombre!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary.withOpacity(0.5),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -492,9 +553,9 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -503,9 +564,14 @@ class _Badge extends StatelessWidget {
             Icon(icon, size: 11, color: color),
             const SizedBox(width: 3),
           ],
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
@@ -529,9 +595,10 @@ class _FiltroChips extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                color: AppTheme.textSecondary, fontSize: 12)),
+        Text(
+          label,
+          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -540,24 +607,29 @@ class _FiltroChips extends StatelessWidget {
             return GestureDetector(
               onTap: () => onSelected(sel ? null : e.key),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: sel
                       ? AppTheme.primary.withOpacity(0.2)
                       : AppTheme.surfaceLight.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: sel
-                          ? AppTheme.primary
-                          : AppTheme.border.withOpacity(0.5)),
+                    color: sel
+                        ? AppTheme.primary
+                        : AppTheme.border.withOpacity(0.5),
+                  ),
                 ),
-                child: Text(e.value,
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: sel
-                            ? AppTheme.primary
-                            : AppTheme.textSecondary)),
+                child: Text(
+                  e.value,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: sel ? AppTheme.primary : AppTheme.textSecondary,
+                  ),
+                ),
               ),
             );
           }).toList(),
@@ -582,13 +654,17 @@ class _TriSwitch extends StatelessWidget {
           color: sel ? AppTheme.primary.withOpacity(0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-              color: sel ? AppTheme.primary : AppTheme.border.withOpacity(0.5)),
+            color: sel ? AppTheme.primary : AppTheme.border.withOpacity(0.5),
+          ),
         ),
-        child: Text(label,
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: sel ? AppTheme.primary : AppTheme.textSecondary)),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: sel ? AppTheme.primary : AppTheme.textSecondary,
+          ),
+        ),
       ),
     );
   }

@@ -1,5 +1,4 @@
 // lib/main.dart
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -16,11 +15,7 @@ void main() async {
   // ──────────────────────────────────────────────────────────────────────────
   // Cargar variables de entorno
   // ──────────────────────────────────────────────────────────────────────────
-  if (kIsWeb) {
-    await dotenv.load(fileName: 'assets/config/.env');
-  } else {
-    await dotenv.load();
-  }
+  await dotenv.load(fileName: 'assets/config/.env');
 
   // ──────────────────────────────────────────────────────────────────────────
   // Configurar URLs (desde environment variables o .env)

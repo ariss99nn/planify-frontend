@@ -75,6 +75,42 @@ class ModuloProvider extends ChangeNotifier {
     fetchList(reset: true);
   }
 
+  // ── Dropdown (selector de módulos) ──────────────────────────────────
+  List<ModuloResumenEntity> _dropdownItems = [];
+  List<ModuloResumenEntity> get dropdownItems =>
+      List.unmodifiable(_dropdownItems);
+
+  bool isLoadingDropdown = false;
+  String? dropdownError;
+  bool _dropdownLoaded = false;
+
+  Future<void> fetchModulosForDropdown({
+    int? versionId,
+    bool force = false,
+  }) async {
+    if (_dropdownLoaded && !force) return;
+
+    isLoadingDropdown = true;
+    dropdownError = null;
+    notifyListeners();
+
+    try {
+      final response = await _listarModulos(
+        versionId: versionId,
+        page: 1,
+        pageSize: 100,
+        estado: ModuloEstado.activo,
+      );
+      _dropdownItems = response.results;
+      _dropdownLoaded = true;
+    } on ApiException catch (e) {
+      dropdownError = e.message;
+    } finally {
+      isLoadingDropdown = false;
+      notifyListeners();
+    }
+  }
+
   // ── Detalle ──────────────────────────────────────────────────────────
   ModuloEntity? selected;
   bool isLoadingDetail = false;

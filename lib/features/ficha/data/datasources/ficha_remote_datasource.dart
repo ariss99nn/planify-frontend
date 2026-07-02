@@ -71,12 +71,11 @@ class FichaRemoteDatasource {
   Future<FichaModel> updateEtapa(
     int id, {
     required String etapa,
-    required int trimestre,
   }) async {
     final data = await ApiService.patch(
       '/fichas/$id/etapa/',
       token: await _token(),
-      data: {'etapa': etapa, 'trimestre': trimestre},
+      data: {'etapa': etapa},
     ) as Map<String, dynamic>;
     return FichaModel.fromJson(data);
   }
@@ -109,12 +108,13 @@ class FichaRemoteDatasource {
   Future<FichaEstudianteModel> addEstudiante(
     int fichaId, {
     required int estudianteId,
-    required bool esCadena,
   }) async {
+    // 'es_cadena' ya no se envía: el backend lo deriva automáticamente de
+    // ficha.cadena_formacion para mantener la coherencia ficha/estudiante.
     final data = await ApiService.post(
       '/fichas/$fichaId/estudiantes/add/',
       token: await _token(),
-      data: {'ficha': fichaId, 'estudiante': estudianteId, 'es_cadena': esCadena},
+      data: {'ficha': fichaId, 'estudiante': estudianteId},
     ) as Map<String, dynamic>;
     return FichaEstudianteModel.fromJson(data);
   }

@@ -22,10 +22,7 @@ class _HistorialViewState extends State<HistorialView> {
   String? _filtroEtapaNueva;
   String? _filtroEtapaAnterior;
 
-  static const _etapas = {
-    'LECTIVA': 'Lectiva',
-    'PRODUCTIVA': 'Productiva',
-  };
+  static const _etapas = {'LECTIVA': 'Lectiva', 'PRODUCTIVA': 'Productiva'};
 
   @override
   void initState() {
@@ -49,9 +46,9 @@ class _HistorialViewState extends State<HistorialView> {
 
   Future<void> _cargar() async {
     await context.read<FichaProvider>().fetchHistorial(
-          etapaNueva:    _filtroEtapaNueva,
-          etapaAnterior: _filtroEtapaAnterior,
-        );
+      etapaNueva: _filtroEtapaNueva,
+      etapaAnterior: _filtroEtapaAnterior,
+    );
   }
 
   @override
@@ -65,9 +62,11 @@ class _HistorialViewState extends State<HistorialView> {
           children: [
             Icon(Icons.lock_outline, size: 48, color: AppTheme.textSecondary),
             SizedBox(height: 12),
-            Text('Solo coordinadores pueden ver el historial global.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+            Text(
+              'Solo coordinadores pueden ver el historial global.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+            ),
           ],
         ),
       );
@@ -83,8 +82,8 @@ class _HistorialViewState extends State<HistorialView> {
             children: [
               Expanded(
                 child: _FiltroDropdown(
-                  label:    'De etapa',
-                  valor:    _filtroEtapaAnterior,
+                  label: 'De etapa',
+                  valor: _filtroEtapaAnterior,
                   opciones: _etapas,
                   onChanged: (v) {
                     setState(() => _filtroEtapaAnterior = v);
@@ -93,12 +92,16 @@ class _HistorialViewState extends State<HistorialView> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward, color: AppTheme.textSecondary, size: 16),
+              const Icon(
+                Icons.arrow_forward,
+                color: AppTheme.textSecondary,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: _FiltroDropdown(
-                  label:    'A etapa',
-                  valor:    _filtroEtapaNueva,
+                  label: 'A etapa',
+                  valor: _filtroEtapaNueva,
                   opciones: _etapas,
                   onChanged: (v) {
                     setState(() => _filtroEtapaNueva = v);
@@ -122,29 +125,37 @@ class _HistorialViewState extends State<HistorialView> {
               child: Text(
                 '${provider.totalHistorial} registros',
                 style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary.withOpacity(0.6)),
+                  fontSize: 12,
+                  color: AppTheme.textSecondary.withOpacity(0.6),
+                ),
               ),
             ),
           ),
 
         if (provider.loadingHistorial && provider.historial.isEmpty)
           const Expanded(
-              child: CyberLoadingView(mensaje: 'Cargando historial…'))
-        else if (provider.historialError != null &&
-            provider.historial.isEmpty)
+            child: CyberLoadingView(mensaje: 'Cargando historial…'),
+          )
+        else if (provider.historialError != null && provider.historial.isEmpty)
           Expanded(
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline,
-                      size: 48, color: Colors.redAccent),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.redAccent,
+                  ),
                   const SizedBox(height: 12),
-                  Text(provider.historialError!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          color: AppTheme.textSecondary, fontSize: 13)),
+                  Text(
+                    provider.historialError!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: _cargar,
@@ -171,8 +182,11 @@ class _HistorialViewState extends State<HistorialView> {
               child: ListView.builder(
                 controller: _scrollCtrl,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                itemCount: provider.historial.length +
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                itemCount:
+                    provider.historial.length +
                     (provider.hayMasPaginasHistorial ? 1 : 0),
                 itemBuilder: (_, i) {
                   if (i == provider.historial.length) {
@@ -222,18 +236,24 @@ class _HistorialCard extends StatelessWidget {
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(Icons.arrow_forward,
-                    size: 14, color: AppTheme.primary),
+                child: Icon(
+                  Icons.arrow_forward,
+                  size: 14,
+                  color: AppTheme.primary,
+                ),
               ),
               _EtapaBadge(
                 label: item.etapaNuevaDisplay,
                 color: AppTheme.primary,
               ),
               const Spacer(),
-              Text(fecha,
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.textSecondary.withOpacity(0.6))),
+              Text(
+                fecha,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.textSecondary.withOpacity(0.6),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -241,34 +261,47 @@ class _HistorialCard extends StatelessWidget {
             children: [
               const Icon(Icons.tag, size: 12, color: AppTheme.accent),
               const SizedBox(width: 4),
-              Text(item.fichaCodigo,
-                  style: const TextStyle(
-                      color: AppTheme.accent,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
+              Text(
+                item.fichaCodigo,
+                style: const TextStyle(
+                  color: AppTheme.accent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(width: 12),
-              Icon(Icons.calendar_view_month_outlined,
-                  size: 12,
-                  color: AppTheme.textSecondary.withOpacity(0.5)),
+              Icon(
+                Icons.calendar_view_month_outlined,
+                size: 12,
+                color: AppTheme.textSecondary.withOpacity(0.5),
+              ),
               const SizedBox(width: 4),
-              Text('T${item.trimestre}',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary.withOpacity(0.5))),
+              Text(
+                'T${item.trimestre}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary.withOpacity(0.5),
+                ),
+              ),
             ],
           ),
           if (item.cambiadoPorNombre != null) ...[
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.person_outline,
-                    size: 12,
-                    color: AppTheme.textSecondary.withOpacity(0.4)),
+                Icon(
+                  Icons.person_outline,
+                  size: 12,
+                  color: AppTheme.textSecondary.withOpacity(0.4),
+                ),
                 const SizedBox(width: 4),
-                Text('Por: ${item.cambiadoPorNombre}',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.textSecondary.withOpacity(0.4))),
+                Text(
+                  'Por: ${item.cambiadoPorNombre}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary.withOpacity(0.4),
+                  ),
+                ),
               ],
             ),
           ],
@@ -288,13 +321,18 @@ class _EtapaBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 }
@@ -321,19 +359,28 @@ class _FiltroDropdown extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-            color: AppTheme.textSecondary.withOpacity(0.7), fontSize: 12),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          color: AppTheme.textSecondary.withOpacity(0.7),
+          fontSize: 12,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
       ),
       items: [
         DropdownMenuItem(
           value: null,
-          child: Text('Todos',
-              style: TextStyle(color: AppTheme.textSecondary.withOpacity(0.7),
-                  fontSize: 13)),
+          child: Text(
+            'Todos',
+            style: TextStyle(
+              color: AppTheme.textSecondary.withOpacity(0.7),
+              fontSize: 13,
+            ),
+          ),
         ),
-        ...opciones.entries.map((e) =>
-            DropdownMenuItem(value: e.key, child: Text(e.value))),
+        ...opciones.entries.map(
+          (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
+        ),
       ],
       onChanged: onChanged,
     );

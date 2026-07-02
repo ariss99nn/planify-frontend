@@ -61,56 +61,80 @@ class ReportesView extends StatelessWidget {
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      children: [
-        const Text(
-          'Generar nuevo reporte',
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Se genera en segundo plano. Te avisamos cuando esté listo.',
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-        ),
-        const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.3,
-          children: tipos
-              .map((t) => ReporteTipoTile(
-                    tipo: t,
-                    onTap: () => _solicitar(context, t),
-                  ))
-              .toList(),
-        ),
-        if (provider.historial.isNotEmpty) ...[
-          const SizedBox(height: 28),
-          const Text(
-            'Historial de esta sesión',
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // En web/desktop el ancho disponible puede ser muy grande; con un
+        // GridView.count(crossAxisCount: 2) fijo cada celda terminaba
+        // ocupando la mitad de la pantalla (paneles enormes e invasivos).
+        // Con maxCrossAxisExtent cada tile tiene un tamaño máximo fijo y el
+        // grid simplemente agrega más columnas cuanto más ancho hay,
+        // limitando además el ancho total del contenido en pantallas muy
+        // grandes para que no quede pegado a los bordes.
+        final anchoContenido =
+            constraints.maxWidth > 900 ? 900.0 : constraints.maxWidth;
+
+        return Center(
+          child: SizedBox(
+            width: anchoContenido,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              children: [
+                const Text(
+                  'Generar nuevo reporte',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Se genera en segundo plano. Te avisamos cuando esté listo.',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate:
+                      const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 160,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.05,
+                  ),
+                  itemCount: tipos.length,
+                  itemBuilder: (context, index) {
+                    final t = tipos[index];
+                    return ReporteTipoTile(
+                      tipo: t,
+                      onTap: () => _solicitar(context, t),
+                    );
+                  },
+                ),
+                if (provider.historial.isNotEmpty) ...[
+                  const SizedBox(height: 28),
+                  const Text(
+                    'Historial de esta sesión',
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...provider.historial.map(
+                    (r) => ReporteHistorialItem(
+                      reporte: r,
+                      onTap: () => onVerEstado(r.id),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          ...provider.historial.map(
-            (r) => ReporteHistorialItem(
-              reporte: r,
-              onTap: () => onVerEstado(r.id),
-            ),
-          ),
-        ],
-      ],
+        );
+      },
     );
   }
 }

@@ -177,4 +177,33 @@ class AsignaturaProvider extends ChangeNotifier {
     _saveError = null;
     notifyListeners();
   }
+
+  // ── Listado completo para selects (ej: "Nueva competencia") ─────────────
+  // Independiente de la paginación del listado principal: trae todas las
+  // asignaturas activas de una sola vez para poblar un dropdown.
+  List<AsignaturaItem> _dropdownItems = [];
+  bool                 _isLoadingDropdown = false;
+  String?              dropdownError;
+
+  List<AsignaturaItem> get dropdownItems     => _dropdownItems;
+  bool                  get isLoadingDropdown => _isLoadingDropdown;
+
+  Future<void> fetchAsignaturasForDropdown({bool force = false}) async {
+    if (_isLoadingDropdown) return;
+    if (_dropdownItems.isNotEmpty && !force) return;
+    _isLoadingDropdown = true;
+    dropdownError = null;
+    notifyListeners();
+    try {
+      final res = await _repo.list(estado: 'ACTIVA', page: 1, pageSize: 500);
+      _dropdownItems = res.results;
+    } on ApiException catch (e) {
+      dropdownError = e.message;
+    } catch (_) {
+      dropdownError = 'Error de conexión.';
+    } finally {
+      _isLoadingDropdown = false;
+      notifyListeners();
+    }
+  }
 }

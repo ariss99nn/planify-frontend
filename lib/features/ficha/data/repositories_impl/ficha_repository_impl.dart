@@ -60,8 +60,7 @@ class FichaRepositoryImpl implements FichaRepository {
   Future<FichaEntity> updateEtapa(int id, EtapaUpdateRequest request) async {
     final model = await _datasource.updateEtapa(
       id,
-      etapa:     request.etapa,
-      trimestre: request.trimestre,
+      etapa: request.etapa,
     );
     return model.toEntity();
   }

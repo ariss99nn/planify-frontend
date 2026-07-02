@@ -53,6 +53,9 @@ class _ExportarViewState extends State<ExportarView> {
       for (final c in _controllers.values) {
         c.clear();
       }
+      if (nuevo.soloExcel) {
+        _formato = FormatoExportacion.excel;
+      }
     });
   }
 
@@ -82,6 +85,9 @@ class _ExportarViewState extends State<ExportarView> {
   Widget build(BuildContext context) {
     final isExporting = context.watch<ExportacionProvider>().isExporting;
     final campos      = kFiltrosPorModulo[_modulo] ?? const [];
+    final formatos    = _modulo.soloExcel
+        ? [FormatoExportacion.excel]
+        : FormatoExportacion.values;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -100,12 +106,20 @@ class _ExportarViewState extends State<ExportarView> {
           const CyberSectionLabel(label: 'Formato de descarga'),
           const SizedBox(height: 8),
           SegmentedButton<FormatoExportacion>(
-            segments: FormatoExportacion.values
+            segments: formatos
                 .map((f) => ButtonSegment(value: f, label: Text(f.label)))
                 .toList(),
             selected: {_formato},
             onSelectionChanged: (s) => setState(() => _formato = s.first),
           ),
+          if (_modulo.soloExcel) ...[
+            const SizedBox(height: 8),
+            Text(
+              'La base de datos completa incluye una hoja por módulo, '
+              'por eso solo está disponible en Excel.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
           if (campos.isNotEmpty) ...[
             const SizedBox(height: 24),
             const CyberSectionLabel(label: 'Filtros opcionales'),

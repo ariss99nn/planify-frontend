@@ -31,6 +31,50 @@ class _ProgramaFormViewState extends State<ProgramaFormView> {
   ProgramaTipoFormacion _tipoFormacion = ProgramaTipoFormacion.porOferta;
   bool _initialized = false;
 
+  /// true mientras el usuario no haya tocado horas/trimestres a mano;
+  /// controla si al cambiar de nivel se sobrescriben esos campos con el
+  /// preset o se respeta lo que ya escribió.
+  bool _horasEditadasManualmente = false;
+  bool _trimestresEditadosManualmente = false;
+
+  bool get _esCursoCorto => _nivel == ProgramaNivel.cursoCorto;
+  bool get _permiteCadenaFormacion =>
+      ProgramaPreset.byNivel[_nivel]?.permiteCadenaFormacion ?? false;
+
+  /// Aplica los valores sugeridos del nivel elegido. Solo pisa los campos
+  /// que el usuario no ha editado a mano, para no ser invasivo si ya venía
+  /// ajustando algo.
+  void _aplicarPreset(ProgramaNivel nivel) {
+    final preset = ProgramaPreset.byNivel[nivel];
+    if (preset == null) return;
+
+    if (!_horasEditadasManualmente) {
+      if (preset.horasLectivas != null) {
+        _horasLectivasController.text = '${preset.horasLectivas}';
+      } else if (preset.horasLectivasMin != null && preset.horasLectivasMax != null) {
+        // Curso corto: sugerimos el punto medio del rango permitido.
+        final medio = ((preset.horasLectivasMin! + preset.horasLectivasMax!) / 2).round();
+        _horasLectivasController.text = '$medio';
+      }
+      if (preset.horasPracticas != null) {
+        _horasPracticasController.text = '${preset.horasPracticas}';
+      }
+    }
+    // Para Curso Corto el campo de trimestres queda oculto en el
+    // formulario (no aplica), así que su valor siempre se fija al preset
+    // para no arrastrar un número obsoleto cuando el nivel cambia.
+    if (!_trimestresEditadosManualmente || nivel == ProgramaNivel.cursoCorto) {
+      _trimestresTotalesController.text = '${preset.trimestresTotales}';
+    }
+
+    // La cadena de formación solo aplica para Tecnólogo.
+    if (!preset.permiteCadenaFormacion &&
+        _tipoFormacion == ProgramaTipoFormacion.cadenaFormacion) {
+      _tipoFormacion = ProgramaTipoFormacion.porOferta;
+      _trimestresCadenaController.clear();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +84,8 @@ class _ProgramaFormViewState extends State<ProgramaFormView> {
       });
     } else {
       _initialized = true;
+      // Precarga las sugerencias del nivel por defecto (Técnico).
+      _aplicarPreset(_nivel);
     }
   }
 
@@ -65,6 +111,10 @@ class _ProgramaFormViewState extends State<ProgramaFormView> {
     _estado = p.estado;
     _tipoFormacion = p.tipoFormacion;
     _initialized = true;
+    // Es un programa existente: no pisar sus horas/trimestres reales con
+    // el preset si el usuario solo cambia otro campo.
+    _horasEditadasManualmente = true;
+    _trimestresEditadosManualmente = true;
   }
 
   Future<void> _submit() async {
@@ -106,6 +156,12 @@ class _ProgramaFormViewState extends State<ProgramaFormView> {
   String? _validateHorasLectivas(String? value) {
     final n = int.tryParse(value?.trim() ?? '');
     if (n == null || n <= 0) return 'Debe ser mayor a 0.';
+    if (_esCursoCorto) {
+      final preset = ProgramaPreset.byNivel[ProgramaNivel.cursoCorto]!;
+      final min = preset.horasLectivasMin!;
+      final max = preset.horasLectivasMax!;
+      if (n < min || n > max) return 'Un curso corto debe tener entre $min y $max horas.';
+    }
     return null;
   }
 
@@ -171,7 +227,22 @@ class _ProgramaFormViewState extends State<ProgramaFormView> {
                   items: ProgramaNivel.values
                       .map((n) => DropdownMenuItem(value: n, child: Text(n.label)))
                       .toList(),
-                  onChanged: (v) => setState(() => _nivel = v!),
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setState(() {
+                      _nivel = v;
+                      _aplicarPreset(v);
+                    });
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Text(
+                    ProgramaPreset.byNivel[_nivel]?.descripcion ?? '',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<ProgramaEstado>(
@@ -189,7 +260,11 @@ class _ProgramaFormViewState extends State<ProgramaFormView> {
                       child: TextFormField(
                         controller: _horasLectivasController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Horas lectivas'),
+                        decoration: InputDecoration(
+                          labelText: 'Horas lectivas',
+                          helperText: _esCursoCorto ? 'Entre 40 y 80 horas.' : null,
+                        ),
+                        onChanged: (_) => _horasEditadasManualmente = true,
                         validator: _validateHorasLectivas,
                       ),
                     ),
@@ -199,6 +274,7 @@ class _ProgramaFormViewState extends State<ProgramaFormView> {
                         controller: _horasPracticasController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(labelText: 'Horas prácticas'),
+                        onChanged: (_) => _horasEditadasManualmente = true,
                         validator: _validateHorasPracticas,
                       ),
                     ),
@@ -210,7 +286,14 @@ class _ProgramaFormViewState extends State<ProgramaFormView> {
                 DropdownButtonFormField<ProgramaTipoFormacion>(
                   value: _tipoFormacion,
                   decoration: const InputDecoration(labelText: 'Tipo de formación'),
+                  // La Cadena de Formación solo aplica a programas de
+                  // Tecnólogo: se excluye del listado para otros niveles
+                  // en vez de dejar que el usuario elija algo que el
+                  // backend rechazará.
                   items: ProgramaTipoFormacion.values
+                      .where((t) =>
+                          t != ProgramaTipoFormacion.cadenaFormacion ||
+                          _permiteCadenaFormacion)
                       .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
                       .toList(),
                   onChanged: (v) {
@@ -224,39 +307,44 @@ class _ProgramaFormViewState extends State<ProgramaFormView> {
                     });
                   },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _trimestresTotalesController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Trimestres totales',
-                    helperText: 'Total de trimestres antes de etapa productiva.',
-                  ),
-                  validator: (v) {
-                    final n = int.tryParse(v?.trim() ?? '');
-                    if (n == null || n <= 0) return 'Ingresa un número válido.';
-                    return null;
-                  },
-                ),
-                if (_tipoFormacion == ProgramaTipoFormacion.cadenaFormacion) ...[
+                // Los trimestres solo tienen sentido para Técnico y
+                // Tecnólogo; un curso corto se mide en horas.
+                if (!_esCursoCorto) ...[
                   const SizedBox(height: 16),
                   TextFormField(
-                    controller: _trimestresCadenaController,
+                    controller: _trimestresTotalesController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Trimestres en etapa lectiva',
-                      helperText: 'Debe ser menor al total de trimestres.',
+                      labelText: 'Trimestres totales',
+                      helperText: 'Total de trimestres antes de etapa productiva.',
                     ),
+                    onChanged: (_) => _trimestresEditadosManualmente = true,
                     validator: (v) {
                       final n = int.tryParse(v?.trim() ?? '');
-                      final total = int.tryParse(_trimestresTotalesController.text.trim());
-                      if (n == null) return 'Requerido para cadena de formación.';
-                      if (total != null && n >= total) {
-                        return 'Debe ser menor que el total de trimestres.';
-                      }
+                      if (n == null || n <= 0) return 'Ingresa un número válido.';
                       return null;
                     },
                   ),
+                  if (_tipoFormacion == ProgramaTipoFormacion.cadenaFormacion) ...[
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _trimestresCadenaController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Trimestres en etapa lectiva',
+                        helperText: 'Debe ser menor al total de trimestres.',
+                      ),
+                      validator: (v) {
+                        final n = int.tryParse(v?.trim() ?? '');
+                        final total = int.tryParse(_trimestresTotalesController.text.trim());
+                        if (n == null) return 'Requerido para cadena de formación.';
+                        if (total != null && n >= total) {
+                          return 'Debe ser menor que el total de trimestres.';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 28),
                 ElevatedButton(

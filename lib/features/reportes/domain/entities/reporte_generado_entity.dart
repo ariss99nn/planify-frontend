@@ -4,6 +4,7 @@ enum ReporteTipo {
   horarios,
   competencias,
   aulas,
+  planes,
   analitica,
   novedades,
 }
@@ -21,6 +22,8 @@ extension ReporteTipoX on ReporteTipo {
         return 'COMPETENCIAS';
       case ReporteTipo.aulas:
         return 'AULAS';
+      case ReporteTipo.planes:
+        return 'PLANES';
       case ReporteTipo.analitica:
         return 'ANALITICA';
       case ReporteTipo.novedades:
@@ -40,6 +43,8 @@ extension ReporteTipoX on ReporteTipo {
         return 'Competencias';
       case ReporteTipo.aulas:
         return 'Aulas';
+      case ReporteTipo.planes:
+        return 'Planes';
       case ReporteTipo.analitica:
         return 'Analítica';
       case ReporteTipo.novedades:
@@ -47,10 +52,18 @@ extension ReporteTipoX on ReporteTipo {
     }
   }
 
+  /// Debe reflejar exactamente los tipos registrados en
+  /// `ReportesConfig.ready()` (back/reportes/apps.py) contra
+  /// `ReporteFactory`. FICHAS, DOCENTES, AULAS, HORARIOS, COMPETENCIAS
+  /// y PLANES ya tienen generador registrado; ANALITICA y NOVEDADES
+  /// todavía no, por lo que siguen marcados "Próximamente".
   bool get implementadoEnBackend {
     return this == ReporteTipo.fichas ||
         this == ReporteTipo.docentes ||
-        this == ReporteTipo.aulas;
+        this == ReporteTipo.aulas ||
+        this == ReporteTipo.horarios ||
+        this == ReporteTipo.competencias ||
+        this == ReporteTipo.planes;
   }
 
   static ReporteTipo fromValue(String raw) {
@@ -60,6 +73,8 @@ extension ReporteTipoX on ReporteTipo {
     );
   }
 
+  /// Debe reflejar `TIPOS_PERMITIDOS_NO_GESTION` en
+  /// reportes/serializers/reporte_generado_serializer.py.
   static List<ReporteTipo> permitidosParaRol(String rol) {
     const docenteRol = 'DOCENTE';
     if (rol == docenteRol) {

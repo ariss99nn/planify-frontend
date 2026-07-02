@@ -160,10 +160,35 @@ class _SearchSelectorSheetState<T extends Seleccionable>
                   builder: (context, provider, _) {
                     if (provider.error != null) {
                       return Center(
-                        child: Text(
-                          provider.error!,
-                          style:
-                              const TextStyle(color: Colors.redAccent),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  color: Colors.redAccent, size: 28),
+                              const SizedBox(height: 10),
+                              Text(
+                                provider.error!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                    color: Colors.redAccent),
+                              ),
+                              const SizedBox(height: 14),
+                              OutlinedButton.icon(
+                                onPressed: () => provider.reintentar(),
+                                icon: const Icon(Icons.refresh, size: 18),
+                                label: const Text('Reintentar'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor:
+                                      const Color(0xFF35F58A),
+                                  side: const BorderSide(
+                                      color: Color(0xFF35F58A)),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }

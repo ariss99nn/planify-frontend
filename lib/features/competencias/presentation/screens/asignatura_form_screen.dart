@@ -6,6 +6,7 @@ import '../../data/models/asignatura_model.dart';
 import '../providers/asignatura_provider.dart';
 import '../../competencia_theme.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../programa/presentation/providers/modulo_provider.dart';
 
 class AsignaturaFormScreen extends StatefulWidget {
   final AsignaturaItem? existing;
@@ -23,9 +24,14 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
   late final TextEditingController _horasLectivas;
   late final TextEditingController _horasPracticas;
   late final TextEditingController _orden;
-  late final TextEditingController _moduloId;
-  String _tipo   = 'TEORICO_PRACTICA';
-  String _estado = 'ACTIVA';
+  String  _tipo   = 'TEORICO_PRACTICA';
+  String  _estado = 'ACTIVA';
+  int?    _moduloId;
+
+  // Casilla "Teórica": si está marcada, la asignatura es solo TEORICA y no
+  // tiene horas prácticas (se envían en 0 automáticamente). Si no está
+  // marcada, es TEORICO_PRACTICA y las horas prácticas son editables.
+  bool get _esTeorica => _tipo == 'TEORICA';
 
   bool get _isEdit => widget.existing != null;
 
@@ -41,36 +47,66 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
         text: e != null ? '${e.horasPracticas}' : '');
     _orden          = TextEditingController(
         text: e != null ? '${e.orden}' : '');
-    _moduloId       = TextEditingController(
-        text: e?.moduloId != null ? '${e!.moduloId}' : '');
     if (e != null) {
-      _tipo   = e.tipo;
-      _estado = e.estado;
+      _tipo     = e.tipo;
+      _estado   = e.estado;
+      _moduloId = e.moduloId;
+    }
+
+    // Trae el listado de módulos para el selector (solo hace falta al crear).
+    if (!_isEdit) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<ModuloProvider>().fetchModulosForDropdown();
+      });
     }
   }
 
   @override
   void dispose() {
     for (final c in [
-      _nombre, _descripcion, _horasLectivas, _horasPracticas, _orden, _moduloId
+      _nombre, _descripcion, _horasLectivas, _horasPracticas, _orden
     ]) {
       c.dispose();
     }
     super.dispose();
   }
 
+  void _onTeoricaChanged(bool checked) {
+    setState(() {
+      if (checked) {
+        _tipo = 'TEORICA';
+        _horasPracticas.text = '0';
+      } else {
+        _tipo = 'TEORICO_PRACTICA';
+        if (_horasPracticas.text.trim() == '0') _horasPracticas.text = '';
+      }
+    });
+  }
+
   Future<void> _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_isEdit && _moduloId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecciona un módulo.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
     final prov = context.read<AsignaturaProvider>();
     prov.clearSaveError();
 
     final payload = {
-      if (!_isEdit) 'modulo': int.parse(_moduloId.text.trim()),
+      if (!_isEdit) 'modulo': _moduloId,
       'nombre':          _nombre.text.trim(),
       'descripcion':     _descripcion.text.trim(),
       'tipo':            _tipo,
       'horas_lectivas':  int.parse(_horasLectivas.text.trim()),
-      'horas_practicas': int.parse(_horasPracticas.text.trim()),
+      // Si es teórica, siempre 0 sin importar lo que muestre el campo.
+      'horas_practicas':
+          _esTeorica ? 0 : int.parse(_horasPracticas.text.trim()),
       'orden':           int.parse(_orden.text.trim()),
       'estado':          _estado,
     };
@@ -116,16 +152,48 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
                   if (prov.saveError != null)
                     CyberErrorBanner(message: prov.saveError),
                   if (!_isEdit) ...[
-                    _label('ID del módulo *'),
-                    _textField(
-                      controller: _moduloId,
-                      hint: 'Ej: 1',
-                      inputType: TextInputType.number,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Requerido';
-                        if (int.tryParse(v.trim()) == null)
-                          return 'Debe ser un número';
-                        return null;
+                    _label('Módulo *'),
+                    Consumer<ModuloProvider>(
+                      builder: (context, moduloProv, _) {
+                        if (moduloProv.isLoadingDropdown) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: CT.primary),
+                            ),
+                          );
+                        }
+                        if (moduloProv.dropdownError != null) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(moduloProv.dropdownError!,
+                                  style: const TextStyle(
+                                      color: Colors.redAccent, fontSize: 12)),
+                              TextButton(
+                                onPressed: () => moduloProv
+                                    .fetchModulosForDropdown(force: true),
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
+                          );
+                        }
+                        final modulos = moduloProv.dropdownItems;
+                        // Si el módulo seleccionado (ej. al editar/precargar)
+                        // no está en la lista activa, igual se conserva.
+                        final valorValido =
+                            modulos.any((m) => m.id == _moduloId);
+                        return _dropdown<int>(
+                          value: valorValido ? _moduloId : null,
+                          hint: 'Selecciona un módulo',
+                          items: {
+                            for (final m in modulos) m.id: m.nombre,
+                          },
+                          onChanged: (v) => setState(() => _moduloId = v),
+                        );
                       },
                     ),
                     const SizedBox(height: 16),
@@ -144,17 +212,34 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
                       hint: 'Descripción de la asignatura…',
                       maxLines: 3),
                   const SizedBox(height: 16),
-                  _label('Tipo *'),
-                  _dropdown(
-                    value: _tipo,
-                    items: const {
-                      'TEORICA': 'Teórica',
-                      'PRACTICA': 'Práctica',
-                      'TEORICO_PRACTICA': 'Teórico-Práctica',
-                    },
-                    onChanged: (v) => setState(() => _tipo = v!),
+                  // Casilla "Teórica": si se marca, la asignatura es solo
+                  // teórica y no tiene horas prácticas (0 automático).
+                  // Si se desmarca, es teórico-práctica y las horas
+                  // prácticas vuelven a ser editables.
+                  InkWell(
+                    onTap: () => _onTeoricaChanged(!_esTeorica),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: _esTeorica,
+                            activeColor: CT.primary,
+                            onChanged: (v) => _onTeoricaChanged(v ?? false),
+                          ),
+                          const Expanded(
+                            child: Text(
+                              'Es teórica (sin horas prácticas)',
+                              style: TextStyle(
+                                  color: CT.textPrimary, fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -185,11 +270,13 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
                             _textField(
                               controller: _horasPracticas,
                               hint: '0',
+                              enabled: !_esTeorica,
                               inputType: TextInputType.number,
                               validator: (v) {
+                                if (_esTeorica) return null;
                                 final n = int.tryParse(v?.trim() ?? '');
                                 if (n == null) return 'Número requerido';
-                                if (n < 0) return 'No negativo';
+                                if (n <= 0) return 'Mayor a 0';
                                 return null;
                               },
                             ),
@@ -259,33 +346,37 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
     required TextEditingController controller,
     String? hint,
     int maxLines = 1,
+    bool enabled = true,
     TextInputType inputType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
+      enabled: enabled,
       keyboardType: inputType,
       inputFormatters: inputType == TextInputType.number
           ? [FilteringTextInputFormatter.digitsOnly]
           : null,
       validator: validator,
-      style: const TextStyle(color: CT.textPrimary, fontSize: 14),
+      style: TextStyle(
+          color: enabled ? CT.textPrimary : CT.textSec, fontSize: 14),
       decoration: InputDecoration(hintText: hint),
     );
   }
 
-  Widget _dropdown({
-    required String value,
-    required Map<String, String> items,
-    required ValueChanged<String?> onChanged,
+  Widget _dropdown<T>({
+    required T?  value,
+    required Map<T, String> items,
+    required ValueChanged<T?> onChanged,
+    String? hint,
   }) {
-    return DropdownButtonFormField<String>(
+    return DropdownButtonFormField<T>(
       value: value,
       dropdownColor: CT.surfaceLight,
       style: const TextStyle(color: CT.textPrimary, fontSize: 14),
       icon: const Icon(Icons.keyboard_arrow_down, color: CT.primary),
-      decoration: const InputDecoration(),
+      decoration: InputDecoration(hintText: hint),
       items: items.entries
           .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
           .toList(),
