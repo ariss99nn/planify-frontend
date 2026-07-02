@@ -19,6 +19,8 @@ class FichaRemoteDatasource {
     int? programa,
     int? version,
     int? jefeGrupo,
+    String? nivel,
+    String? tipoFormacion,
     int page     = 1,
     int pageSize = 20,
   }) async {
@@ -33,6 +35,11 @@ class FichaRemoteDatasource {
       if (programa != null)        'programa':         programa.toString(),
       if (version != null)         'version':          version.toString(),
       if (jefeGrupo != null)       'jefe_grupo':       jefeGrupo.toString(),
+      // Filtro por nivel del programa (Técnico/Tecnólogo/Curso Corto) y
+      // por tipo de formación (Por Oferta/Cadena de Formación), para
+      // buscar fichas por tipo de carrera sin conocer el id del programa.
+      if (nivel != null)           'nivel':            nivel,
+      if (tipoFormacion != null)   'tipo_formacion':   tipoFormacion,
     };
     final data = await ApiService.get(
       '/fichas/',

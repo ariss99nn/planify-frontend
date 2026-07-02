@@ -10,6 +10,7 @@ class FichaModel {
   final int version;
   final String programaNombre;
   final String programaNivel;
+  final String? programaTipoFormacion;
   final int versionNumero;
   final String jornada;
   final String jornadaDisplay;
@@ -17,16 +18,22 @@ class FichaModel {
   final String etapaDisplay;
   final int trimestre;
   final int? trimestresRestantes;
+  final int? trimestresTotalesModalidad;
+  final int trimestresAhorradosCadena;
   final int horasSemanalesObjetivo;
   final String estado;
   final bool cadenaFormacion;
   final int numeroEstudiantesEstimado;
   final int numeroEstudiantesReal;
+  final int cupoDisponible;
   final int? jefeGrupo;
   final String? jefeGrupoNombre;
   final String? jefeGrupoEmail;
+  final String? jefeGrupoEspecialidad;
   final DateTime fechaInicio;
   final DateTime? fechaFinalizacion;
+  final List<Map<String, dynamic>> distribucionSemanalSugerida;
+  final List<Map<String, dynamic>> calendarioTrimestres;
   final List<HistorialEtapaModel> historialEtapasReciente;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -37,6 +44,7 @@ class FichaModel {
     required this.version,
     required this.programaNombre,
     required this.programaNivel,
+    this.programaTipoFormacion,
     required this.versionNumero,
     required this.jornada,
     required this.jornadaDisplay,
@@ -44,16 +52,22 @@ class FichaModel {
     required this.etapaDisplay,
     required this.trimestre,
     this.trimestresRestantes,
+    this.trimestresTotalesModalidad,
+    this.trimestresAhorradosCadena = 0,
     required this.horasSemanalesObjetivo,
     required this.estado,
     required this.cadenaFormacion,
     required this.numeroEstudiantesEstimado,
     required this.numeroEstudiantesReal,
+    this.cupoDisponible = 0,
     this.jefeGrupo,
     this.jefeGrupoNombre,
     this.jefeGrupoEmail,
+    this.jefeGrupoEspecialidad,
     required this.fechaInicio,
     this.fechaFinalizacion,
+    this.distribucionSemanalSugerida = const [],
+    this.calendarioTrimestres = const [],
     required this.historialEtapasReciente,
     required this.createdAt,
     required this.updatedAt,
@@ -65,6 +79,7 @@ class FichaModel {
         version:                    json['version'] as int,
         programaNombre:             json['programa_nombre'] as String,
         programaNivel:              json['programa_nivel'] as String,
+        programaTipoFormacion:      json['programa_tipo_formacion'] as String?,
         versionNumero:              json['version_numero'] as int,
         jornada:                    json['jornada'] as String,
         jornadaDisplay:             json['jornada_display'] as String,
@@ -72,18 +87,28 @@ class FichaModel {
         etapaDisplay:               json['etapa_display'] as String,
         trimestre:                  json['trimestre'] as int,
         trimestresRestantes:        json['trimestres_restantes'] as int?,
+        trimestresTotalesModalidad: json['trimestres_totales_modalidad'] as int?,
+        trimestresAhorradosCadena:  json['trimestres_ahorrados_cadena'] as int? ?? 0,
         horasSemanalesObjetivo:     json['horas_semanales_objetivo'] as int,
         estado:                     json['estado'] as String,
         cadenaFormacion:            json['cadena_formacion'] as bool,
         numeroEstudiantesEstimado:  json['numero_estudiantes_estimado'] as int,
         numeroEstudiantesReal:      json['numero_estudiantes_real'] as int,
+        cupoDisponible:             json['cupo_disponible'] as int? ?? 0,
         jefeGrupo:                  json['jefe_grupo'] as int?,
         jefeGrupoNombre:            json['jefe_grupo_nombre'] as String?,
         jefeGrupoEmail:             json['jefe_grupo_email'] as String?,
+        jefeGrupoEspecialidad:      json['jefe_grupo_especialidad'] as String?,
         fechaInicio:                DateTime.parse(json['fecha_inicio'] as String),
         fechaFinalizacion:          json['fecha_finalizacion'] != null
             ? DateTime.parse(json['fecha_finalizacion'] as String)
             : null,
+        distribucionSemanalSugerida: (json['distribucion_semanal_sugerida'] as List? ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList(),
+        calendarioTrimestres:       (json['calendario_trimestres'] as List? ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList(),
         historialEtapasReciente:    (json['historial_etapas_reciente'] as List? ?? [])
             .map((e) => HistorialEtapaModel.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -97,6 +122,7 @@ class FichaModel {
         version:                    version,
         programaNombre:             programaNombre,
         programaNivel:              programaNivel,
+        programaTipoFormacion:      programaTipoFormacion,
         versionNumero:              versionNumero,
         jornada:                    jornada,
         jornadaDisplay:             jornadaDisplay,
@@ -104,16 +130,22 @@ class FichaModel {
         etapaDisplay:               etapaDisplay,
         trimestre:                  trimestre,
         trimestresRestantes:        trimestresRestantes,
+        trimestresTotalesModalidad: trimestresTotalesModalidad,
+        trimestresAhorradosCadena:  trimestresAhorradosCadena,
         horasSemanalesObjetivo:     horasSemanalesObjetivo,
         estado:                     estado,
         cadenaFormacion:            cadenaFormacion,
         numeroEstudiantesEstimado:  numeroEstudiantesEstimado,
         numeroEstudiantesReal:      numeroEstudiantesReal,
+        cupoDisponible:             cupoDisponible,
         jefeGrupo:                  jefeGrupo,
         jefeGrupoNombre:            jefeGrupoNombre,
         jefeGrupoEmail:             jefeGrupoEmail,
+        jefeGrupoEspecialidad:      jefeGrupoEspecialidad,
         fechaInicio:                fechaInicio,
         fechaFinalizacion:          fechaFinalizacion,
+        distribucionSemanalSugerida: distribucionSemanalSugerida,
+        calendarioTrimestres:       calendarioTrimestres,
         historialEtapasReciente:    historialEtapasReciente.map((h) => h.toEntity()).toList(),
         createdAt:                  createdAt,
         updatedAt:                  updatedAt,
@@ -126,6 +158,8 @@ class FichaListModel {
   final int id;
   final String codigoFicha;
   final String programaNombre;
+  final String? programaNivel;
+  final String? programaTipoFormacion;
   final int versionNumero;
   final String jornada;
   final String jornadaDisplay;
@@ -144,6 +178,8 @@ class FichaListModel {
     required this.id,
     required this.codigoFicha,
     required this.programaNombre,
+    this.programaNivel,
+    this.programaTipoFormacion,
     required this.versionNumero,
     required this.jornada,
     required this.jornadaDisplay,
@@ -163,6 +199,8 @@ class FichaListModel {
         id:                        json['id'] as int,
         codigoFicha:               json['codigo_ficha'] as String,
         programaNombre:            json['programa_nombre'] as String,
+        programaNivel:             json['programa_nivel'] as String?,
+        programaTipoFormacion:     json['programa_tipo_formacion'] as String?,
         versionNumero:             json['version_numero'] as int,
         jornada:                   json['jornada'] as String,
         jornadaDisplay:            json['jornada_display'] as String,
@@ -184,6 +222,8 @@ class FichaListModel {
         id:                        id,
         codigoFicha:               codigoFicha,
         programaNombre:            programaNombre,
+        programaNivel:             programaNivel,
+        programaTipoFormacion:     programaTipoFormacion,
         versionNumero:             versionNumero,
         jornada:                   jornada,
         jornadaDisplay:            jornadaDisplay,

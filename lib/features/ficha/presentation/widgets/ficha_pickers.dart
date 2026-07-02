@@ -8,12 +8,41 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/api/api_service.dart';
+import '../../../../core/models/paginated_response.dart';
 import '../../../auth/models/user_model.dart';
 import '../../../users/services/user_service.dart';
 import '../../../docentes/domain/entities/docente_entity.dart';
 import '../../../docentes/data/repositories_impl/docente_repository_impl.dart';
+import '../../../programa/domain/entities/programa_entity.dart';
 import '../../../programa/domain/entities/version_programa_entity.dart';
+import '../../../programa/data/repositories_impl/programa_repository_impl.dart';
 import '../../../programa/data/repositories_impl/version_repository_impl.dart';
+import '../../domain/entities/ficha_entity.dart';
+import '../../data/repositories_impl/ficha_repository_impl.dart';
+
+// ── Carga completa de catálogos paginados ───────────────────────────────────
+//
+// FIX: varios selectores (fichas activas para reasignación, versiones de
+// programa) solo traían la primera página (p. ej. 15 registros) y se
+// mostraban como "Sin resultados" en cuanto el catálogo real superaba
+// ese tamaño o el término de búsqueda no calzaba con esa primera página.
+// Este helper recorre todas las páginas automáticamente (mismo patrón
+// que PagedResult/catálogos infinitos ya usado en el módulo de aulas) y
+// concatena los resultados antes de mostrarlos.
+Future<List<T>> fetchAllPages<T>(
+  Future<PaginatedResponse<T>> Function(int page) fetchPage, {
+  int maxPaginas = 25,
+}) async {
+  final resultados = <T>[];
+  var pagina = 1;
+  while (pagina <= maxPaginas) {
+    final res = await fetchPage(pagina);
+    resultados.addAll(res.results);
+    if (res.next == null || res.results.isEmpty) break;
+    pagina++;
+  }
+  return resultados;
+}
 
 // ── Tile reutilizable para abrir un selector ────────────────────────────────
 
@@ -285,9 +314,49 @@ Future<DocenteEntity?> pickDocente(BuildContext context) {
   );
 }
 
+// ── Selector de programa por nivel (Técnico / Tecnólogo / Curso Corto) ──────
+//
+// Paso previo recomendado antes de elegir la versión: al fijar primero el
+// nivel, el listado de programas —y luego el de versiones— queda acotado
+// a esa modalidad, en vez de mezclar cursos cortos, técnicos y
+// tecnólogos en una sola búsqueda.
+Future<ProgramaResumenEntity?> pickPrograma(
+  BuildContext context, {
+  required ProgramaNivel nivel,
+}) {
+  final repo = ProgramaRepositoryImpl();
+  return showModalBottomSheet<ProgramaResumenEntity>(
+    context: context,
+    backgroundColor: AppTheme.surface,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (_) => _SearchSheet<ProgramaResumenEntity>(
+      hint: 'Buscar programa de ${nivel.label}…',
+      buscar: (query) => fetchAllPages(
+        (page) => repo.list(
+          search: query.isEmpty ? null : query,
+          nivel: nivel,
+          estado: ProgramaEstado.activo,
+          page: page,
+          pageSize: 30,
+        ),
+      ),
+      itemBuilder: (p) => _tileRow(
+        icon: Icons.menu_book_outlined,
+        titulo: p.nombre,
+        subtitulo: '${nivel.label} · ${p.totalHoras}h totales',
+      ),
+    ),
+  );
+}
+
 // ── Selector de programa / versión ──────────────────────────────────────────
 
-Future<VersionResumenEntity?> pickVersionPrograma(BuildContext context) {
+Future<VersionResumenEntity?> pickVersionPrograma(
+  BuildContext context, {
+  int? programaId,
+}) {
   final repo = VersionRepositoryImpl();
   return showModalBottomSheet<VersionResumenEntity>(
     context: context,
@@ -297,18 +366,63 @@ Future<VersionResumenEntity?> pickVersionPrograma(BuildContext context) {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (_) => _SearchSheet<VersionResumenEntity>(
       hint: 'Buscar programa…',
-      buscar: (query) async {
-        final res = await repo.list(
+      // FIX: antes solo se traía la página 1 (pageSize 15); ahora se
+      // recorren todas las páginas para que "sin resultados" refleje la
+      // realidad del catálogo y no un límite de paginación.
+      buscar: (query) => fetchAllPages(
+        (page) => repo.list(
           search: query.isEmpty ? null : query,
+          programaId: programaId,
           vigente: true,
-          pageSize: 15,
-        );
-        return res.results;
-      },
+          page: page,
+          pageSize: 30,
+        ),
+      ),
       itemBuilder: (v) => _tileRow(
         icon: Icons.menu_book_outlined,
         titulo: v.programaNombre,
         subtitulo: 'v${v.numero} · ${v.totalHoras}h totales',
+      ),
+    ),
+  );
+}
+
+// ── Selector de ficha activa (usado en reasignación) ────────────────────────
+
+Future<FichaListEntity?> pickFichaActiva(
+  BuildContext context, {
+  int? excluirFichaId,
+}) {
+  final repo = FichaRepositoryImpl();
+  return showModalBottomSheet<FichaListEntity>(
+    context: context,
+    backgroundColor: AppTheme.surface,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (_) => _SearchSheet<FichaListEntity>(
+      hint: 'Buscar ficha activa…',
+      // FIX: este selector solo pedía la primera página y por eso
+      // aparecía "Sin resultados" apenas el catálogo de fichas activas
+      // superaba ese tamaño. Ahora carga automáticamente todas las
+      // páginas de fichas activas al abrir la hoja.
+      buscar: (query) async {
+        final todas = await fetchAllPages(
+          (page) => repo.getFichas(
+            search: query.isEmpty ? null : query,
+            estado: 'ACTIVA',
+            page: page,
+            pageSize: 30,
+          ),
+        );
+        return excluirFichaId == null
+            ? todas
+            : todas.where((f) => f.id != excluirFichaId).toList();
+      },
+      itemBuilder: (f) => _tileRow(
+        icon: Icons.groups_outlined,
+        titulo: f.codigoFicha,
+        subtitulo: '${f.programaNombre} · ${f.jornadaDisplay}',
       ),
     ),
   );

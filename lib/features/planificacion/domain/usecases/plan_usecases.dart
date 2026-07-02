@@ -106,3 +106,29 @@ class GenerarHorarioUseCase {
     return _repo.generarHorario(plan.id);
   }
 }
+
+class AutoGenerarPlanUseCase {
+  final PlanificacionRepository _repo;
+  const AutoGenerarPlanUseCase(this._repo);
+
+  Future<ResultadoAutoGeneracion> call({
+    required int      fichaId,
+    required int      trimestre,
+    DateTime?         fechaInicio,
+    DateTime?         fechaFin,
+  }) {
+    if (trimestre <= 0) {
+      throw const PlanificacionException('El trimestre debe ser mayor a 0.');
+    }
+    if (fechaInicio != null && fechaFin != null && !fechaFin.isAfter(fechaInicio)) {
+      throw const PlanificacionException(
+          'La fecha de fin debe ser posterior a la de inicio.');
+    }
+    return _repo.autoGenerarPlan(
+      fichaId:     fichaId,
+      trimestre:   trimestre,
+      fechaInicio: fechaInicio,
+      fechaFin:    fechaFin,
+    );
+  }
+}

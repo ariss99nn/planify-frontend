@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/api/api_service.dart';
 import '../../data/repositories_impl/exportacion_repository_impl.dart';
+import '../../domain/entities/export_result.dart';
 import '../../domain/entities/exportacion_enums.dart';
 import '../../domain/entities/registro_exportacion_entity.dart';
 import '../../domain/usecases/exportar_datos_usecase.dart';
@@ -27,18 +26,17 @@ class ExportacionProvider extends ChangeNotifier {
 
   // ── Estado de exportación ─────────────────────────────────────────────────
 
-  ExportStatus _exportStatus = ExportStatus.idle;
-  String?      _exportError;
-  File?        _lastFile;
-  String?      _lastFileName;
+  ExportStatus  _exportStatus = ExportStatus.idle;
+  String?       _exportError;
+  ExportResult? _lastResult;
 
-  ExportStatus get exportStatus  => _exportStatus;
-  String?      get exportError   => _exportError;
-  File?        get lastFile      => _lastFile;
-  String?      get lastFileName  => _lastFileName;
-  bool         get isExporting   => _exportStatus == ExportStatus.loading;
-  bool         get exportSuccess => _exportStatus == ExportStatus.success;
-  bool         get hasExportError => _exportStatus == ExportStatus.error;
+  ExportStatus  get exportStatus   => _exportStatus;
+  String?       get exportError    => _exportError;
+  ExportResult? get lastResult     => _lastResult;
+  String?       get lastFileName   => _lastResult?.fileName;
+  bool          get isExporting    => _exportStatus == ExportStatus.loading;
+  bool          get exportSuccess  => _exportStatus == ExportStatus.success;
+  bool          get hasExportError => _exportStatus == ExportStatus.error;
 
   Future<void> exportar({
     required TipoExportacion    modulo,
@@ -47,9 +45,8 @@ class ExportacionProvider extends ChangeNotifier {
   }) async {
     if (_exportStatus == ExportStatus.loading) return;
 
-    _lastFile     = null;
-    _lastFileName = null;
-    _exportError  = null;
+    _lastResult  = null;
+    _exportError = null;
     _setExportState(ExportStatus.loading);
 
     try {
@@ -58,8 +55,7 @@ class ExportacionProvider extends ChangeNotifier {
         formato: formato,
         filtros: filtros,
       );
-      _lastFile     = result.file;
-      _lastFileName = result.fileName;
+      _lastResult = result;
       _setExportState(ExportStatus.success);
     } catch (e) {
       _exportError = _clean(e);
@@ -68,9 +64,8 @@ class ExportacionProvider extends ChangeNotifier {
   }
 
   void resetExport() {
-    _lastFile     = null;
-    _lastFileName = null;
-    _exportError  = null;
+    _lastResult  = null;
+    _exportError = null;
     _setExportState(ExportStatus.idle);
   }
 

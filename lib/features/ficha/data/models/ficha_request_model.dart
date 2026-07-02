@@ -50,32 +50,38 @@ class FichaCreateRequest {
 /// 'fecha_finalizacion' ya NO son editables desde aquí. La cadena de
 /// formación solo se define al crear la ficha; la fecha fin y las horas se
 /// recalculan automáticamente en el backend.
+/// 'numero_estudiantes_estimado' (cupo) tampoco se edita: queda fijo desde
+/// la creación de la ficha — lo que varía con el tiempo es el número real
+/// de estudiantes activos, que se calcula solo.
+/// Reemplazar el jefe de grupo por otro distinto exige
+/// 'confirmarCambioDocente=true'; no aplica al asignar uno por primera vez
+/// ni al quitarlo.
 class FichaUpdateRequest {
   final String? jornada;
-  final int? numeroEstudiantesEstimado;
   final String? estado;
   final int? jefeGrupoId;
   final bool clearJefeGrupo;
+  final bool confirmarCambioDocente;
   final DateTime? fechaInicio;
 
   const FichaUpdateRequest({
     this.jornada,
-    this.numeroEstudiantesEstimado,
     this.estado,
     this.jefeGrupoId,
     this.clearJefeGrupo = false,
+    this.confirmarCambioDocente = false,
     this.fechaInicio,
   });
 
   Map<String, dynamic> toJson() {
     final m = <String, dynamic>{};
-    if (jornada != null)                   m['jornada']                     = jornada;
-    if (numeroEstudiantesEstimado != null) m['numero_estudiantes_estimado'] = numeroEstudiantesEstimado;
-    if (estado != null)                    m['estado']                      = estado;
+    if (jornada != null) m['jornada'] = jornada;
+    if (estado != null)  m['estado']  = estado;
     if (clearJefeGrupo) {
       m['jefe_grupo'] = null;
     } else if (jefeGrupoId != null) {
       m['jefe_grupo'] = jefeGrupoId;
+      m['confirmar_cambio_docente'] = confirmarCambioDocente;
     }
     if (fechaInicio != null) m['fecha_inicio'] = _fmtDate(fechaInicio!);
     return m;

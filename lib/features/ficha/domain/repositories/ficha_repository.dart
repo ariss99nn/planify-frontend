@@ -14,6 +14,8 @@ abstract class FichaRepository {
     int? programa,
     int? version,
     int? jefeGrupo,
+    String? nivel,
+    String? tipoFormacion,
     int page,
     int pageSize,
   });

@@ -3,12 +3,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/friendly_feedback.dart';
 import '../../providers/ficha_provider.dart';
 import '../../../data/models/ficha_request_model.dart';
+import '../../../../programa/domain/entities/programa_entity.dart';
 import '../../../../programa/domain/entities/version_programa_entity.dart';
 import '../../../../docentes/domain/entities/docente_entity.dart';
 import '../ficha_form_fields.dart';
 import '../ficha_pickers.dart';
+
+/// Meses en los que el SENA abre matrícula. Debe reflejar
+/// ficha.services.ficha_calculo_service.MESES_INICIO_PERMITIDOS en el
+/// backend — una ficha solo puede iniciar en uno de estos cortes.
+const _mesesInicioPermitidos = {1: 'Enero', 3: 'Marzo', 7: 'Julio', 10: 'Octubre'};
 
 class FichaCreateView extends StatefulWidget {
   const FichaCreateView({super.key});
@@ -28,7 +35,9 @@ class _FichaCreateViewState extends State<FichaCreateView> {
   bool      _cadenaFormacion = false;
   DateTime? _fechaInicio;
 
-  VersionResumenEntity? _version;
+  ProgramaNivel          _nivel     = ProgramaNivel.tecnico;
+  ProgramaResumenEntity? _programa;
+  VersionResumenEntity?  _version;
   DocenteEntity?         _jefeGrupo;
 
   static const _jornadas = {
@@ -39,6 +48,15 @@ class _FichaCreateViewState extends State<FichaCreateView> {
     'ACTIVA': 'Activa', 'INACTIVA': 'Inactiva', 'CERRADA': 'Cerrada',
   };
 
+  /// La cadena de formación solo aplica a programas de Tecnología
+  /// configurados explícitamente como cadena de formación — igual que
+  /// valida el backend (puede_usar_cadena_formacion). Mostrar esto antes
+  /// de que el usuario intente guardar evita el 400 sorpresivo.
+  bool get _programaPermiteCadena =>
+      _programa != null &&
+      _programa!.nivel == ProgramaNivel.tecnologia &&
+      _programa!.tipoFormacion == ProgramaTipoFormacion.cadenaFormacion;
+
   @override
   void dispose() {
     _codigoCtrl.dispose();
@@ -46,25 +64,81 @@ class _FichaCreateViewState extends State<FichaCreateView> {
     super.dispose();
   }
 
+  /// FIX: antes se abría un calendario libre (cualquier día), pero el
+  /// backend solo acepta fichas que inicien en los cortes de matrícula
+  /// del SENA (enero/marzo/julio/octubre) y rechazaba cualquier otra
+  /// fecha con un 400. Ahora se ofrece directamente el próximo corte
+  /// disponible de cada mes habilitado, sin dar pie al error.
   Future<void> _pickFechaInicio() async {
-    final picked = await showDatePicker(
+    final hoy = DateTime.now();
+    final opciones = <DateTime>[];
+    for (var year = hoy.year; opciones.length < 6; year++) {
+      for (final mes in _mesesInicioPermitidos.keys) {
+        final fecha = DateTime(year, mes, 1);
+        if (fecha.isAfter(hoy) || _esMismoMes(fecha, hoy)) {
+          opciones.add(fecha);
+        }
+      }
+    }
+    opciones.sort();
+
+    final elegido = await showModalBottomSheet<DateTime>(
       context: context,
-      initialDate: _fechaInicio ?? DateTime.now(),
-      firstDate: DateTime(2015),
-      lastDate:  DateTime(2035),
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Cortes de matrícula disponibles',
+                  style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w700)),
+            ),
+            for (final f in opciones.take(6))
+              ListTile(
+                leading: const Icon(Icons.event_available, color: AppTheme.primary),
+                title: Text('${_mesesInicioPermitidos[f.month]} ${f.year}',
+                    style: const TextStyle(color: AppTheme.textPrimary)),
+                onTap: () => Navigator.pop(context, f),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
-    if (picked == null) return;
-    setState(() => _fechaInicio = picked);
+    if (elegido == null) return;
+    setState(() => _fechaInicio = elegido);
   }
 
+  bool _esMismoMes(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month;
+
   String _fmtFecha(DateTime? d) {
-    if (d == null) return 'Hoy (por defecto)';
-    return '${d.day.toString().padLeft(2, '0')}/'
-        '${d.month.toString().padLeft(2, '0')}/${d.year}';
+    if (d == null) return 'Selecciona un corte de matrícula';
+    return '${_mesesInicioPermitidos[d.month]} ${d.year}';
+  }
+
+  Future<void> _pickPrograma() async {
+    final picked = await pickPrograma(context, nivel: _nivel);
+    if (picked == null) return;
+    setState(() {
+      _programa = picked;
+      _version  = null; // cambiar de programa obliga a re-elegir versión
+      if (!_programaPermiteCadena) _cadenaFormacion = false;
+    });
   }
 
   Future<void> _pickVersion() async {
-    final picked = await pickVersionPrograma(context);
+    if (_programa == null) {
+      showFriendlySnack(context, 'Primero selecciona el programa.',
+          tono: FeedbackTono.advertencia);
+      return;
+    }
+    final picked = await pickVersionPrograma(context, programaId: _programa!.id);
     if (picked == null) return;
     setState(() => _version = picked);
   }
@@ -79,11 +153,13 @@ class _FichaCreateViewState extends State<FichaCreateView> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_version == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Selecciona el programa (versión) de la ficha.'),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ));
+      showFriendlySnack(context, 'Selecciona el programa (versión) de la ficha.',
+          tono: FeedbackTono.advertencia);
+      return;
+    }
+    if (_fechaInicio == null) {
+      showFriendlySnack(context, 'Selecciona la fecha de inicio (corte de matrícula).',
+          tono: FeedbackTono.advertencia);
       return;
     }
 
@@ -91,6 +167,11 @@ class _FichaCreateViewState extends State<FichaCreateView> {
       codigoFicha:               _codigoCtrl.text.trim(),
       versionId:                 _version!.id,
       jornada:                   _jornada,
+      // FIX: el cupo ya no se fuerza a 0 en cadena de formación —esa
+      // regla no existía en el backend y producía el 400 "El número de
+      // estudiantes estimado debe ser mayor a 0". El cupo siempre
+      // representa la estimación inicial y queda fijo tras crear la
+      // ficha (ver FichaUpdateRequest).
       numeroEstudiantesEstimado: int.parse(_estudiantesCtrl.text.trim()),
       etapa:                     _etapa,
       estado:                    _estado,
@@ -107,11 +188,11 @@ class _FichaCreateViewState extends State<FichaCreateView> {
     if (ficha != null) {
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(provider.mutationError ?? 'No se pudo crear la ficha.'),
-        backgroundColor: Colors.red.shade700,
-        behavior: SnackBarBehavior.floating,
-      ));
+      showFriendlyApiError(
+        context,
+        provider.mutationError,
+        fallback: 'No se pudo crear la ficha.',
+      );
     }
   }
 
@@ -155,12 +236,48 @@ class _FichaCreateViewState extends State<FichaCreateView> {
                   (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
             ),
             const SizedBox(height: 14),
+
+            // Nivel primero: acota programa y versión a la misma
+            // modalidad (no se mezclan cursos cortos con técnicos ni
+            // tecnólogos al buscar).
+            Wrap(
+              spacing: 8,
+              children: ProgramaNivel.values.map((n) {
+                final selected = _nivel == n;
+                return ChoiceChip(
+                  label: Text(n.label),
+                  selected: selected,
+                  onSelected: (_) => setState(() {
+                    _nivel     = n;
+                    _programa  = null;
+                    _version   = null;
+                    _cadenaFormacion = false;
+                  }),
+                  selectedColor: AppTheme.primary.withOpacity(0.25),
+                  backgroundColor: AppTheme.surface.withOpacity(0.3),
+                  labelStyle: TextStyle(
+                      color: selected ? AppTheme.primary : AppTheme.textSecondary,
+                      fontWeight: FontWeight.w600),
+                  side: BorderSide(
+                      color: selected ? AppTheme.primary : AppTheme.border),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+            FichaPickerTile(
+              label: _programa?.nombre ?? 'Seleccionar programa (${_nivel.label})',
+              icon: Icons.menu_book_outlined,
+              tieneValor: _programa != null,
+              onTap: _pickPrograma,
+            ),
+            const SizedBox(height: 10),
             FichaPickerTile(
               label: _version != null
-                  ? '${_version!.programaNombre} · v${_version!.numero}'
-                  : 'Seleccionar programa',
-              icon: Icons.menu_book_outlined,
+                  ? 'Versión ${_version!.numero} · ${_version!.totalHoras}h'
+                  : 'Seleccionar versión vigente',
+              icon: Icons.layers_outlined,
               tieneValor: _version != null,
+              enabled: _programa != null,
               onTap: _pickVersion,
             ),
             const SizedBox(height: 24),
@@ -190,22 +307,18 @@ class _FichaCreateViewState extends State<FichaCreateView> {
             TextFormField(
               controller: _estudiantesCtrl,
               keyboardType: TextInputType.number,
-              enabled: !_cadenaFormacion,
-              style: TextStyle(
-                  color: _cadenaFormacion
-                      ? AppTheme.textSecondary
-                      : AppTheme.textPrimary),
+              style: const TextStyle(color: AppTheme.textPrimary),
               decoration: _dec('Cupo estimado', icon: Icons.people_outline)
                   .copyWith(
-                helperText: _cadenaFormacion
-                    ? 'En cadena de formación el cupo se gestiona por '
-                        'trimestre, no aquí.'
-                    : null,
+                helperText:
+                    'Es la estimación inicial de matrícula; una vez creada la '
+                    'ficha no se puede modificar. El número real de '
+                    'estudiantes activos se calcula solo.',
+                helperMaxLines: 2,
               ),
               validator: (v) {
-                if (_cadenaFormacion) return null;
                 final n = int.tryParse(v?.trim() ?? '');
-                if (n == null || n <= 0) return '> 0';
+                if (n == null || n <= 0) return 'Debe ser mayor a 0';
                 return null;
               },
             ),
@@ -232,24 +345,28 @@ class _FichaCreateViewState extends State<FichaCreateView> {
                     style:
                         TextStyle(color: AppTheme.textPrimary, fontSize: 14)),
                 subtitle: Text(
-                  'Solo se define aquí; no podrá cambiarse después de crear '
-                  'la ficha. El programa debe tener trimestres de cadena '
-                  'configurados.',
+                  _programa == null
+                      ? 'Selecciona primero un programa.'
+                      : _programaPermiteCadena
+                          ? 'Esta ficha se ahorrará trimestres frente a la '
+                            'oferta estándar del programa. Solo se define '
+                            'aquí; no podrá cambiarse después de crear la '
+                            'ficha.'
+                          : 'El programa "${_programa!.nombre}" no está '
+                            'habilitado para cadena de formación (solo '
+                            'aplica a Tecnólogos configurados para ello).',
                   style: TextStyle(
                       color: AppTheme.textSecondary.withOpacity(0.6),
                       fontSize: 11),
                 ),
-                value: _cadenaFormacion,
-                onChanged: (v) => setState(() {
-                  _cadenaFormacion = v;
-                  // Para esta modalidad el cupo lo gestiona el backend por
-                  // trimestre: el campo se bloquea y se envía en 0.
-                  if (v) {
-                    _estudiantesCtrl.text = '0';
-                  } else if (_estudiantesCtrl.text.trim() == '0') {
-                    _estudiantesCtrl.text = '';
-                  }
-                }),
+                value: _cadenaFormacion && _programaPermiteCadena,
+                // FIX: en vez de fallar tras enviar el formulario, el
+                // interruptor queda deshabilitado (con el motivo explicado
+                // arriba) cuando el programa elegido no admite cadena de
+                // formación.
+                onChanged: _programaPermiteCadena
+                    ? (v) => setState(() => _cadenaFormacion = v)
+                    : null,
               ),
             ),
             const SizedBox(height: 24),
@@ -265,7 +382,7 @@ class _FichaCreateViewState extends State<FichaCreateView> {
 
             const FichaSeccionLabel('Fechas'),
             FichaFechaTile(
-              label: 'Inicio',
+              label: 'Inicio (corte de matrícula)',
               value: _fmtFecha(_fechaInicio),
               onTap: _pickFechaInicio,
             ),

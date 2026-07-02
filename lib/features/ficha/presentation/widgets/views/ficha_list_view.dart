@@ -26,6 +26,7 @@ class _FichaListViewState extends State<FichaListView> {
   String? _filtroJornada;
   String? _filtroEstado;
   bool? _filtroCadena;
+  String? _filtroNivel;
 
   @override
   void initState() {
@@ -55,6 +56,7 @@ class _FichaListViewState extends State<FichaListView> {
       jornada: _filtroJornada,
       estado: _filtroEstado,
       cadenaFormacion: _filtroCadena,
+      nivel: _filtroNivel,
     );
   }
 
@@ -62,6 +64,7 @@ class _FichaListViewState extends State<FichaListView> {
     _filtroEtapa,
     _filtroJornada,
     _filtroEstado,
+    _filtroNivel,
     if (_filtroCadena != null) 'x',
   ].where((e) => e != null).length;
 
@@ -70,6 +73,7 @@ class _FichaListViewState extends State<FichaListView> {
     String? jornada = _filtroJornada;
     String? estado = _filtroEstado;
     bool? cadena = _filtroCadena;
+    String? nivel = _filtroNivel;
 
     showModalBottomSheet(
       context: context,
@@ -106,6 +110,17 @@ class _FichaListViewState extends State<FichaListView> {
                 ),
               ),
               const SizedBox(height: 20),
+              _FiltroChips(
+                label: 'Nivel (técnico/tecnólogo/curso)',
+                opciones: const {
+                  'TECNICO': 'Técnico',
+                  'TECNOLOGIA': 'Tecnólogo',
+                  'CURSO_CORTO': 'Curso Corto',
+                },
+                seleccionado: nivel,
+                onSelected: (v) => setModal(() => nivel = v),
+              ),
+              const SizedBox(height: 16),
               _FiltroChips(
                 label: 'Etapa',
                 opciones: const {
@@ -161,7 +176,7 @@ class _FichaListViewState extends State<FichaListView> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => setModal(() {
-                        etapa = jornada = estado = null;
+                        etapa = jornada = estado = nivel = null;
                         cadena = null;
                       }),
                       child: const Text('Limpiar'),
@@ -176,6 +191,7 @@ class _FichaListViewState extends State<FichaListView> {
                           _filtroJornada = jornada;
                           _filtroEstado = estado;
                           _filtroCadena = cadena;
+                          _filtroNivel = nivel;
                         });
                         Navigator.pop(ctx);
                         _applyFilters();
@@ -417,15 +433,17 @@ class _FichaListViewState extends State<FichaListView> {
   }
 }
 
-// ── _FichaCard ─────────────────────────────────────────────────────────────────
+// ── _FichaListRow ──────────────────────────────────────────────────────────
+//
+// FIX: la tarjeta anterior era bastante "gruesa" (varias filas, mucho
+// padding) para un listado que puede tener decenas de fichas. Esta
+// versión reduce todo a una fila compacta tipo lista, con la
+// información esencial y sin perder el color-coding por estado/etapa.
 
 class _FichaCard extends StatelessWidget {
   final FichaListEntity ficha;
   final VoidCallback onTap;
   const _FichaCard({required this.ficha, required this.onTap});
-
-  Color get _etapaColor =>
-      ficha.esProductiva ? AppTheme.accent : AppTheme.primary;
 
   Color get _estadoColor {
     switch (ficha.estado) {
@@ -442,98 +460,91 @@ class _FichaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+        margin: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppTheme.surface.withOpacity(0.25),
-          borderRadius: BorderRadius.circular(12),
+          color: AppTheme.surface.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppTheme.border.withOpacity(0.3)),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 34,
+              decoration: BoxDecoration(
+                color: _estadoColor.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Badge(label: ficha.codigoFicha, color: AppTheme.primary),
-                  const SizedBox(width: 8),
-                  if (ficha.cadenaFormacion)
-                    _Badge(
-                      label: 'Cadena',
-                      color: AppTheme.accent,
-                      icon: Icons.link,
-                    ),
-                  const Spacer(),
-                  _Badge(label: ficha.estado, color: _estadoColor),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                ficha.programaNombre,
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'v${ficha.versionNumero} · ${ficha.jornadaDisplay}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary.withOpacity(0.7),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  _Badge(label: ficha.etapaDisplay, color: _etapaColor),
-                  const SizedBox(width: 6),
-                  _Badge(
-                    label: 'T${ficha.trimestre}',
-                    color: AppTheme.textSecondary,
-                  ),
-                  const Spacer(),
-                  Icon(
-                    Icons.people_outline,
-                    size: 14,
-                    color: AppTheme.textSecondary.withOpacity(0.7),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${ficha.numeroEstudiantesReal}/${ficha.numeroEstudiantesEstimado}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-              if (ficha.jefeGrupoNombre != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person_outline,
-                      size: 13,
-                      color: AppTheme.textSecondary.withOpacity(0.5),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      ficha.jefeGrupoNombre!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary.withOpacity(0.5),
+                  Row(
+                    children: [
+                      Text(
+                        ficha.codigoFicha,
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
                       ),
+                      if (ficha.cadenaFormacion) ...[
+                        const SizedBox(width: 6),
+                        Icon(Icons.link, size: 12, color: AppTheme.accent),
+                      ],
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          ficha.programaNombre,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppTheme.textSecondary.withOpacity(0.85),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${ficha.jornadaDisplay} · ${ficha.etapaDisplay} · T${ficha.trimestre}'
+                    '${ficha.jefeGrupoNombre != null ? ' · ${ficha.jefeGrupoNombre}' : ''}',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppTheme.textSecondary.withOpacity(0.55),
+                      fontSize: 11,
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${ficha.numeroEstudiantesReal}/${ficha.numeroEstudiantesEstimado}',
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  ficha.estado,
+                  style: TextStyle(color: _estadoColor, fontSize: 10),
                 ),
               ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -80,6 +80,22 @@ class PlanificacionRepositoryImpl implements PlanificacionRepository {
     return model.toEntity();
   }
 
+  @override
+  Future<ResultadoAutoGeneracion> autoGenerarPlan({
+    required int      fichaId,
+    required int      trimestre,
+    DateTime?         fechaInicio,
+    DateTime?         fechaFin,
+  }) async {
+    final model = await _ds.autoGenerarPlan(
+      fichaId:     fichaId,
+      trimestre:   trimestre,
+      fechaInicio: fechaInicio,
+      fechaFin:    fechaFin,
+    );
+    return model.toEntity();
+  }
+
   // ── Items ──────────────────────────────────────────────────────────────────
 
   @override

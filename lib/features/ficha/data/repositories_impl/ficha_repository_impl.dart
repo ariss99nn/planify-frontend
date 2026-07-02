@@ -22,13 +22,17 @@ class FichaRepositoryImpl implements FichaRepository {
     int? programa,
     int? version,
     int? jefeGrupo,
+    String? nivel,
+    String? tipoFormacion,
     int page     = 1,
     int pageSize = 20,
   }) async {
     final r = await _datasource.getFichas(
       search: search, etapa: etapa, jornada: jornada, estado: estado,
       cadenaFormacion: cadenaFormacion, programa: programa,
-      version: version, jefeGrupo: jefeGrupo, page: page, pageSize: pageSize,
+      version: version, jefeGrupo: jefeGrupo,
+      nivel: nivel, tipoFormacion: tipoFormacion,
+      page: page, pageSize: pageSize,
     );
     return PaginatedResponse<FichaListEntity>(
       count:    r.count,

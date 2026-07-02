@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/friendly_feedback.dart';
 import '../../../../auth/models/user_model.dart';
 import '../../providers/ficha_provider.dart';
 import '../../../data/models/ficha_request_model.dart';
@@ -30,11 +31,8 @@ class _FichaEstudianteAddViewState extends State<FichaEstudianteAddView> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_estudiante == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Selecciona un estudiante.'),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ));
+      showFriendlySnack(context, 'Selecciona un estudiante.',
+          tono: FeedbackTono.advertencia);
       return;
     }
 
@@ -48,12 +46,16 @@ class _FichaEstudianteAddViewState extends State<FichaEstudianteAddView> {
     if (rel != null) {
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-            provider.mutationError ?? 'No se pudo agregar al estudiante.'),
-        backgroundColor: Colors.red.shade700,
-        behavior: SnackBarBehavior.floating,
-      ));
+      // FIX: antes se mostraba el texto crudo de ApiException(...) en un
+      // banner rojo sólido de borde a borde. Ahora se limpia el mensaje
+      // y se muestra en un tono más calmado, sin perder la información
+      // (p. ej. "El estudiante ya tiene una ficha activa. Usa
+      // reasignación para cambiarlo.").
+      showFriendlyApiError(
+        context,
+        provider.mutationError,
+        fallback: 'No se pudo agregar al estudiante.',
+      );
     }
   }
 

@@ -6,6 +6,7 @@ class FichaEntity {
   final int version;
   final String programaNombre;
   final String programaNivel;
+  final String? programaTipoFormacion;
   final int versionNumero;
   final String jornada;
   final String jornadaDisplay;
@@ -13,16 +14,22 @@ class FichaEntity {
   final String etapaDisplay;
   final int trimestre;
   final int? trimestresRestantes;
+  final int? trimestresTotalesModalidad;
+  final int trimestresAhorradosCadena;
   final int horasSemanalesObjetivo;
   final String estado;
   final bool cadenaFormacion;
   final int numeroEstudiantesEstimado;
   final int numeroEstudiantesReal;
+  final int cupoDisponible;
   final int? jefeGrupo;
   final String? jefeGrupoNombre;
   final String? jefeGrupoEmail;
+  final String? jefeGrupoEspecialidad;
   final DateTime fechaInicio;
   final DateTime? fechaFinalizacion;
+  final List<Map<String, dynamic>> distribucionSemanalSugerida;
+  final List<Map<String, dynamic>> calendarioTrimestres;
   final List<HistorialEtapaEntity> historialEtapasReciente;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -33,6 +40,7 @@ class FichaEntity {
     required this.version,
     required this.programaNombre,
     required this.programaNivel,
+    this.programaTipoFormacion,
     required this.versionNumero,
     required this.jornada,
     required this.jornadaDisplay,
@@ -40,16 +48,22 @@ class FichaEntity {
     required this.etapaDisplay,
     required this.trimestre,
     this.trimestresRestantes,
+    this.trimestresTotalesModalidad,
+    this.trimestresAhorradosCadena = 0,
     required this.horasSemanalesObjetivo,
     required this.estado,
     required this.cadenaFormacion,
     required this.numeroEstudiantesEstimado,
     required this.numeroEstudiantesReal,
+    this.cupoDisponible = 0,
     this.jefeGrupo,
     this.jefeGrupoNombre,
     this.jefeGrupoEmail,
+    this.jefeGrupoEspecialidad,
     required this.fechaInicio,
     this.fechaFinalizacion,
+    this.distribucionSemanalSugerida = const [],
+    this.calendarioTrimestres = const [],
     required this.historialEtapasReciente,
     required this.createdAt,
     required this.updatedAt,
@@ -68,6 +82,8 @@ class FichaListEntity {
   final int id;
   final String codigoFicha;
   final String programaNombre;
+  final String? programaNivel;
+  final String? programaTipoFormacion;
   final int versionNumero;
   final String jornada;
   final String jornadaDisplay;
@@ -86,6 +102,8 @@ class FichaListEntity {
     required this.id,
     required this.codigoFicha,
     required this.programaNombre,
+    this.programaNivel,
+    this.programaTipoFormacion,
     required this.versionNumero,
     required this.jornada,
     required this.jornadaDisplay,

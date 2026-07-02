@@ -6,6 +6,7 @@ import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/cyber_error_view.dart';
 import '../../../../../core/widgets/cyber_loading_view.dart';
 import '../../../../../core/widgets/cyber_empty_view.dart';
+import '../../../../../core/widgets/glass_panel.dart';
 import '../../../../auth/providers/auth_provider.dart';
 import '../../providers/ficha_provider.dart';
 import '../../../domain/entities/ficha_entity.dart';
@@ -523,13 +524,172 @@ class _InfoTab extends StatelessWidget {
         _InfoRow('Fecha inicio', _fmt(ficha.fechaInicio)),
         _InfoRow('Fecha fin estimada', _fmt(ficha.fechaFinalizacion)),
         const SizedBox(height: 20),
+        _SeccionTitulo('Capacidad'),
+        GlassPanel(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Expanded(
+                child: _CapacidadMetrica(
+                  label: 'Estimado',
+                  valor: '${ficha.numeroEstudiantesEstimado}',
+                  ayuda: 'Fijo desde la creación',
+                ),
+              ),
+              Expanded(
+                child: _CapacidadMetrica(
+                  label: 'Reales',
+                  valor: '${ficha.numeroEstudiantesReal}',
+                  ayuda: 'Estudiantes activos hoy',
+                  color: AppTheme.accent,
+                ),
+              ),
+              Expanded(
+                child: _CapacidadMetrica(
+                  label: 'Disponible',
+                  valor: '${ficha.cupoDisponible}',
+                  ayuda: 'Cupos libres',
+                  color: AppTheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (ficha.cadenaFormacion && ficha.trimestresAhorradosCadena > 0) ...[
+          const SizedBox(height: 10),
+          GlassPanel(
+            padding: const EdgeInsets.all(12),
+            accent: AppTheme.accent,
+            child: Row(
+              children: [
+                const Icon(Icons.link, color: AppTheme.accent, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Cadena de formación: se ahorra ${ficha.trimestresAhorradosCadena} '
+                    'trimestre(s) frente a la oferta estándar del programa '
+                    '(${ficha.trimestresTotalesModalidad ?? '—'} en total).',
+                    style: TextStyle(
+                        color: AppTheme.textSecondary.withOpacity(0.85),
+                        fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (ficha.distribucionSemanalSugerida.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          _SeccionTitulo('Distribución semanal sugerida'),
+          GlassPanel(
+            padding: const EdgeInsets.all(14),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ficha.distribucionSemanalSugerida.map((d) {
+                final esSabado = d['dia'] == 'SABADO';
+                return GlassBadge(
+                  label: '${_capitalizar(d['dia'] as String)} · ${d['horas']}h',
+                  icon: esSabado ? Icons.event_busy : Icons.event_available,
+                  color: esSabado ? Colors.amber : AppTheme.primary,
+                );
+              }).toList(),
+            ),
+          ),
+          if (ficha.distribucionSemanalSugerida.any((d) => d['dia'] == 'SABADO'))
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Incluye sábado: las horas de esta jornada no alcanzan a '
+                'cubrirse de lunes a viernes.',
+                style: TextStyle(
+                    color: AppTheme.textSecondary.withOpacity(0.6), fontSize: 11),
+              ),
+            ),
+        ],
+        if (ficha.calendarioTrimestres.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          _SeccionTitulo('Calendario de trimestres'),
+          GlassPanel(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              children: ficha.calendarioTrimestres.map((t) {
+                final numero = t['trimestre'];
+                final esActual = numero == ficha.trimestre;
+                return ListTile(
+                  dense: true,
+                  leading: CircleAvatar(
+                    radius: 12,
+                    backgroundColor: esActual
+                        ? AppTheme.primary
+                        : AppTheme.surface.withOpacity(0.4),
+                    child: Text('$numero',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: esActual ? Colors.black : AppTheme.textSecondary)),
+                  ),
+                  title: Text(
+                    '${t['fecha_inicio']} → ${t['fecha_fin']}',
+                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 12),
+                  ),
+                  trailing: esActual
+                      ? const Text('Actual',
+                          style: TextStyle(color: AppTheme.primary, fontSize: 11))
+                      : null,
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
         _SeccionTitulo('Jefe de grupo'),
         _InfoRow('Nombre', ficha.jefeGrupoNombre ?? 'Sin asignar'),
         _InfoRow('Email', ficha.jefeGrupoEmail ?? '—'),
+        _InfoRow('Especialidad', ficha.jefeGrupoEspecialidad ?? '—'),
         const SizedBox(height: 20),
         _SeccionTitulo('Registro'),
         _InfoRow('Creado', _fmt(ficha.createdAt)),
         _InfoRow('Actualizado', _fmt(ficha.updatedAt)),
+      ],
+    );
+  }
+
+  String _capitalizar(String dia) {
+    const nombres = {
+      'LUNES': 'Lun', 'MARTES': 'Mar', 'MIERCOLES': 'Mié',
+      'JUEVES': 'Jue', 'VIERNES': 'Vie', 'SABADO': 'Sáb',
+    };
+    return nombres[dia] ?? dia;
+  }
+}
+
+class _CapacidadMetrica extends StatelessWidget {
+  final String label;
+  final String valor;
+  final String ayuda;
+  final Color color;
+  const _CapacidadMetrica({
+    required this.label,
+    required this.valor,
+    required this.ayuda,
+    this.color = AppTheme.textPrimary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(valor,
+            style: TextStyle(
+                color: color, fontSize: 20, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 2),
+        Text(label,
+            style: const TextStyle(
+                color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+        Text(ayuda,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: AppTheme.textSecondary.withOpacity(0.55), fontSize: 9)),
       ],
     );
   }

@@ -8,6 +8,7 @@ import '../../../../auth/providers/auth_provider.dart';
 import '../../../domain/entities/plan_trimestral_entity.dart';
 import '../../providers/planificacion_provider.dart';
 import '../planificacion_widgets.dart';
+import 'plan_auto_generar_view.dart';
 import 'plan_detail_view.dart';
 import 'plan_form_view.dart';
 
@@ -59,6 +60,14 @@ class _PlanListViewState extends State<PlanListView> {
     _cargar();
   }
 
+  Future<void> _abrirAutoGenerar() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PlanAutoGenerarView()),
+    );
+    _cargar();
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProvider = context.read<AuthProvider>();
@@ -88,15 +97,34 @@ class _PlanListViewState extends State<PlanListView> {
         ],
       ),
       floatingActionButton: isManager
-          ? FloatingActionButton.extended(
-              onPressed:       _abrirFormulario,
-              backgroundColor: const Color(0xFF35F58A),
-              foregroundColor: Colors.black,
-              icon:            const Icon(Icons.add),
-              label: const Text(
-                'Nuevo plan',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FloatingActionButton.extended(
+                  heroTag: 'fab_manual',
+                  onPressed:       _abrirFormulario,
+                  backgroundColor: const Color(0xFF0C1E29),
+                  foregroundColor: const Color(0xFFEAFBF4),
+                  icon:            const Icon(Icons.edit_note_rounded, size: 20),
+                  label: const Text(
+                    'Manual',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FloatingActionButton.extended(
+                  heroTag: 'fab_auto',
+                  onPressed:       _abrirAutoGenerar,
+                  backgroundColor: const Color(0xFF35F58A),
+                  foregroundColor: Colors.black,
+                  icon:            const Icon(Icons.bolt_rounded),
+                  label: const Text(
+                    'Generar automáticamente',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             )
           : null,
       body: Column(
@@ -135,6 +163,7 @@ class _PlanListViewState extends State<PlanListView> {
                   return _EmptyState(
                     isManager: isManager,
                     onCreate:  _abrirFormulario,
+                    onAutoGenerate: _abrirAutoGenerar,
                   );
                 }
 
@@ -235,8 +264,13 @@ class _FiltroEstado extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   final bool         isManager;
   final VoidCallback onCreate;
+  final VoidCallback onAutoGenerate;
 
-  const _EmptyState({required this.isManager, required this.onCreate});
+  const _EmptyState({
+    required this.isManager,
+    required this.onCreate,
+    required this.onAutoGenerate,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +297,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               isManager
-                  ? 'Crea el primer plan para comenzar.'
+                  ? 'Genera el primer plan automáticamente para comenzar.'
                   : 'Aún no hay planes asignados.',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -273,10 +307,20 @@ class _EmptyState extends StatelessWidget {
             ),
             if (isManager) ...[
               const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: onAutoGenerate,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF35F58A),
+                  foregroundColor: Colors.black,
+                ),
+                icon:  const Icon(Icons.bolt_rounded, size: 18),
+                label: const Text('Generar automáticamente'),
+              ),
+              const SizedBox(height: 10),
               OutlinedButton.icon(
                 onPressed: onCreate,
                 icon:      const Icon(Icons.add, size: 18),
-                label:     const Text('Crear plan'),
+                label:     const Text('Crear manualmente'),
               ),
             ],
           ],

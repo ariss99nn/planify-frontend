@@ -18,6 +18,7 @@ class PlanificacionProvider extends ChangeNotifier {
   final ActualizarFechasPlanUseCase _actualizarFechas;
   final CambiarEstadoPlanUseCase  _cambiarEstadoUC;
   final GenerarHorarioUseCase     _generarHorario;
+  final AutoGenerarPlanUseCase    _autoGenerarPlan;
   final CargarItemsUseCase        _cargarItems;
   final CrearItemUseCase          _crearItem;
   final ActualizarItemUseCase     _actualizarItem;
@@ -33,6 +34,7 @@ class PlanificacionProvider extends ChangeNotifier {
       ActualizarFechasPlanUseCase(r),
       CambiarEstadoPlanUseCase(r),
       GenerarHorarioUseCase(r),
+      AutoGenerarPlanUseCase(r),
       CargarItemsUseCase(r),
       CrearItemUseCase(r),
       ActualizarItemUseCase(r),
@@ -48,6 +50,7 @@ class PlanificacionProvider extends ChangeNotifier {
     this._actualizarFechas,
     this._cambiarEstadoUC,
     this._generarHorario,
+    this._autoGenerarPlan,
     this._cargarItems,
     this._crearItem,
     this._actualizarItem,
@@ -243,6 +246,40 @@ class PlanificacionProvider extends ChangeNotifier {
     }
   }
 
+  // ── Auto-generación ───────────────────────────────────────────────────────
+  ReporteAutoGeneracion? _ultimoReporte;
+  ReporteAutoGeneracion? get ultimoReporte => _ultimoReporte;
+
+  Future<ResultadoAutoGeneracion?> autoGenerarPlan({
+    required int      fichaId,
+    required int      trimestre,
+    DateTime?         fechaInicio,
+    DateTime?         fechaFin,
+  }) async {
+    _isSubmitting = true;
+    _error        = null;
+    notifyListeners();
+
+    try {
+      final resultado = await _autoGenerarPlan(
+        fichaId:     fichaId,
+        trimestre:   trimestre,
+        fechaInicio: fechaInicio,
+        fechaFin:    fechaFin,
+      );
+      _selectedPlan  = resultado.plan;
+      _ultimoReporte = resultado.reporte;
+      _planes        = [resultado.plan, ..._planes];
+      return resultado;
+    } catch (e) {
+      _error = _friendlyError(e);
+      return null;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+    }
+  }
+
   // ──────────────────────────────────────────────────────────────────────────
   // Items
   // ──────────────────────────────────────────────────────────────────────────
@@ -399,6 +436,7 @@ class PlanificacionProvider extends ChangeNotifier {
     _planesCount      = 0;
     _hasMorePlanes    = false;
     _selectedPlan     = null;
+    _ultimoReporte    = null;
     _items            = [];
     _bloques          = [];
     _error            = null;

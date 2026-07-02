@@ -17,12 +17,16 @@ class ListarFichasUseCase {
     int? programa,
     int? version,
     int? jefeGrupo,
+    String? nivel,
+    String? tipoFormacion,
     int page     = 1,
     int pageSize = 20,
   }) =>
       repository.getFichas(
         search: search, etapa: etapa, jornada: jornada, estado: estado,
         cadenaFormacion: cadenaFormacion, programa: programa,
-        version: version, jefeGrupo: jefeGrupo, page: page, pageSize: pageSize,
+        version: version, jefeGrupo: jefeGrupo,
+        nivel: nivel, tipoFormacion: tipoFormacion,
+        page: page, pageSize: pageSize,
       );
 }

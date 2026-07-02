@@ -349,3 +349,78 @@ class ResultadoGenerarHorarioModel {
         conflictos:     conflictos.map((c) => c.toEntity()).toList(),
       );
 }
+
+// ─── Auto-generación de planes ────────────────────────────────────────────────
+
+class ConflictoAutoGeneracionModel {
+  final String competencia;
+  final String motivo;
+  final String tipo;
+
+  const ConflictoAutoGeneracionModel({
+    required this.competencia,
+    required this.motivo,
+    required this.tipo,
+  });
+
+  factory ConflictoAutoGeneracionModel.fromJson(Map<String, dynamic> j) =>
+      ConflictoAutoGeneracionModel(
+        competencia: j['competencia'] as String? ?? '',
+        motivo:      j['motivo'] as String? ?? '',
+        tipo:        j['tipo'] as String? ?? 'SIN_ASIGNAR',
+      );
+
+  ConflictoAutoGeneracion toEntity() => ConflictoAutoGeneracion(
+        competencia: competencia,
+        motivo:      motivo,
+        tipo:        tipo,
+      );
+}
+
+class ReporteAutoGeneracionModel {
+  final int itemsCreados;
+  final List<ConflictoAutoGeneracionModel> conflictos;
+  final bool requiereRevisionManual;
+
+  const ReporteAutoGeneracionModel({
+    required this.itemsCreados,
+    required this.conflictos,
+    required this.requiereRevisionManual,
+  });
+
+  factory ReporteAutoGeneracionModel.fromJson(Map<String, dynamic> j) =>
+      ReporteAutoGeneracionModel(
+        itemsCreados: j['items_creados'] as int? ?? 0,
+        conflictos: (j['conflictos'] as List<dynamic>? ?? [])
+            .map((e) =>
+                ConflictoAutoGeneracionModel.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        requiereRevisionManual: j['requiere_revision_manual'] as bool? ?? false,
+      );
+
+  ReporteAutoGeneracion toEntity() => ReporteAutoGeneracion(
+        itemsCreados: itemsCreados,
+        conflictos:   conflictos.map((c) => c.toEntity()).toList(),
+        requiereRevisionManual: requiereRevisionManual,
+      );
+}
+
+class ResultadoAutoGeneracionModel {
+  final PlanTrimestralDetalleModel plan;
+  final ReporteAutoGeneracionModel reporte;
+
+  const ResultadoAutoGeneracionModel({required this.plan, required this.reporte});
+
+  factory ResultadoAutoGeneracionModel.fromJson(Map<String, dynamic> j) =>
+      ResultadoAutoGeneracionModel(
+        plan: PlanTrimestralDetalleModel.fromJson(
+            j['plan'] as Map<String, dynamic>),
+        reporte: ReporteAutoGeneracionModel.fromJson(
+            j['reporte'] as Map<String, dynamic>),
+      );
+
+  ResultadoAutoGeneracion toEntity() => ResultadoAutoGeneracion(
+        plan:    plan.toDetalleEntity(),
+        reporte: reporte.toEntity(),
+      );
+}

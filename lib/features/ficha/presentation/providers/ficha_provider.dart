@@ -2,14 +2,18 @@
 
 import 'package:flutter/material.dart';
 import '../../../../core/models/paginated_response.dart';
+import '../../../../core/widgets/friendly_feedback.dart';
 import '../../data/models/ficha_request_model.dart';
 import '../../data/repositories_impl/ficha_repository_impl.dart';
 import '../../data/repositories_impl/ficha_estudiante_repository_impl.dart';
 import '../../data/repositories_impl/reasignacion_repository_impl.dart';
+import '../../data/repositories_impl/estudiante_bloqueo_repository_impl.dart';
 import '../../domain/entities/ficha_entity.dart';
+import '../../domain/entities/estudiante_bloqueo_entity.dart';
 import '../../domain/repositories/ficha_repository.dart';
 import '../../domain/repositories/ficha_estudiante_repository.dart';
 import '../../domain/repositories/reasignacion_repository.dart';
+import '../../domain/repositories/estudiante_bloqueo_repository.dart';
 import '../../domain/usecases/ficha/listar_fichas_usecase.dart';
 import '../../domain/usecases/ficha/obtener_ficha_usecase.dart';
 import '../../domain/usecases/ficha/crear_ficha_usecase.dart';
@@ -37,15 +41,18 @@ class FichaProvider with ChangeNotifier {
   late final UpdateEstudianteUseCase    _updateEstudiante;
   late final GetReasignacionesUseCase   _getReasignaciones;
   late final CrearReasignacionUseCase   _crearReasignacion;
+  late final EstudianteBloqueoRepository _bloqueoRepo;
 
   FichaProvider({
-    FichaRepository?           fichaRepo,
-    FichaEstudianteRepository? estudianteRepo,
-    ReasignacionRepository?    reasignacionRepo,
+    FichaRepository?             fichaRepo,
+    FichaEstudianteRepository?   estudianteRepo,
+    ReasignacionRepository?      reasignacionRepo,
+    EstudianteBloqueoRepository? bloqueoRepo,
   }) {
     final fr = fichaRepo          ?? FichaRepositoryImpl();
     final er = estudianteRepo     ?? FichaEstudianteRepositoryImpl();
     final rr = reasignacionRepo   ?? ReasignacionRepositoryImpl();
+    _bloqueoRepo = bloqueoRepo    ?? EstudianteBloqueoRepositoryImpl();
 
     _listarFichas      = ListarFichasUseCase(fr);
     _obtenerFicha      = ObtenerFichaUseCase(fr);
@@ -112,6 +119,8 @@ class FichaProvider with ChangeNotifier {
   String? filtroJornada;
   String? filtroEstado;
   bool?   filtroCadena;
+  String? filtroNivel;
+  String? filtroTipoFormacion;
 
   // ── Fichas — GET list ──────────────────────────────────────────────────────
 
@@ -124,17 +133,21 @@ class FichaProvider with ChangeNotifier {
     int?    programa,
     int?    version,
     int?    jefeGrupo,
+    String? nivel,
+    String? tipoFormacion,
     int     page   = 1,
     bool    append = false,
   }) async {
     if (!append) {
-      filtroSearch  = search;
-      filtroEtapa   = etapa;
-      filtroJornada = jornada;
-      filtroEstado  = estado;
-      filtroCadena  = cadenaFormacion;
-      paginaActual  = 1;
-      fichasError   = null;
+      filtroSearch        = search;
+      filtroEtapa         = etapa;
+      filtroJornada       = jornada;
+      filtroEstado        = estado;
+      filtroCadena        = cadenaFormacion;
+      filtroNivel         = nivel;
+      filtroTipoFormacion = tipoFormacion;
+      paginaActual        = 1;
+      fichasError         = null;
     }
 
     loadingFichas = true;
@@ -150,6 +163,8 @@ class FichaProvider with ChangeNotifier {
         programa:        programa,
         version:         version,
         jefeGrupo:       jefeGrupo,
+        nivel:           nivel           ?? filtroNivel,
+        tipoFormacion:   tipoFormacion   ?? filtroTipoFormacion,
         page:            page,
       );
 
@@ -163,7 +178,7 @@ class FichaProvider with ChangeNotifier {
       paginaActual  = page;
       fichasError   = null;
     } catch (e) {
-      fichasError = e.toString();
+      fichasError = friendlyErrorMessage(e);
       if (!append) fichas = [];
     } finally {
       loadingFichas = false;
@@ -187,7 +202,7 @@ class FichaProvider with ChangeNotifier {
     try {
       fichaDetalle = await _obtenerFicha(id);
     } catch (e) {
-      detalleError = e.toString();
+      detalleError = friendlyErrorMessage(e);
     } finally {
       loadingDetalle = false;
       notifyListeners();
@@ -203,7 +218,7 @@ class FichaProvider with ChangeNotifier {
       await fetchFichas();
       return ficha;
     } catch (e) {
-      mutationError = e.toString();
+      mutationError = friendlyErrorMessage(e);
       notifyListeners();
       return null;
     } finally {
@@ -221,7 +236,7 @@ class FichaProvider with ChangeNotifier {
       _patchListItem(id, ficha);
       return ficha;
     } catch (e) {
-      mutationError = e.toString();
+      mutationError = friendlyErrorMessage(e);
       notifyListeners();
       return null;
     } finally {
@@ -238,7 +253,7 @@ class FichaProvider with ChangeNotifier {
       if (fichaDetalle?.id == id) fichaDetalle = ficha;
       return ficha;
     } catch (e) {
-      mutationError = e.toString();
+      mutationError = friendlyErrorMessage(e);
       notifyListeners();
       return null;
     } finally {
@@ -275,7 +290,7 @@ class FichaProvider with ChangeNotifier {
       hayMasPaginasHistorial = res.hasMore;
       paginaActualHistorial  = page;
     } catch (e) {
-      historialError = e.toString();
+      historialError = friendlyErrorMessage(e);
       if (!append) historial = [];
     } finally {
       loadingHistorial = false;
@@ -314,7 +329,7 @@ class FichaProvider with ChangeNotifier {
       estudiantes      = res.results;
       totalEstudiantes = res.count;
     } catch (e) {
-      estudiantesError = e.toString();
+      estudiantesError = friendlyErrorMessage(e);
       estudiantes      = [];
     } finally {
       loadingEstudiantes = false;
@@ -335,7 +350,7 @@ class FichaProvider with ChangeNotifier {
       totalEstudiantes++;
       return rel;
     } catch (e) {
-      mutationError = e.toString();
+      mutationError = friendlyErrorMessage(e);
       notifyListeners();
       return null;
     } finally {
@@ -357,7 +372,7 @@ class FichaProvider with ChangeNotifier {
       if (idx != -1) estudiantes[idx] = rel;
       return rel;
     } catch (e) {
-      mutationError = e.toString();
+      mutationError = friendlyErrorMessage(e);
       notifyListeners();
       return null;
     } finally {
@@ -394,7 +409,7 @@ class FichaProvider with ChangeNotifier {
       hayMasPaginasReasignaciones = res.hasMore;
       paginaActualReasignaciones  = page;
     } catch (e) {
-      reasignacionesError = e.toString();
+      reasignacionesError = friendlyErrorMessage(e);
       if (!append) reasignaciones = [];
     } finally {
       loadingReasignaciones = false;
@@ -420,9 +435,49 @@ class FichaProvider with ChangeNotifier {
       totalReasignaciones++;
       return r;
     } catch (e) {
-      mutationError = e.toString();
+      mutationError = friendlyErrorMessage(e);
       notifyListeners();
       return null;
+    } finally {
+      _endMutation();
+    }
+  }
+
+  // ── Estudiantes bloqueados ──────────────────────────────────────────────────
+
+  List<EstudianteBloqueoEntity> bloqueos = [];
+  bool    loadingBloqueos = false;
+  String? bloqueosError;
+
+  Future<void> fetchBloqueos({bool soloActivos = true}) async {
+    loadingBloqueos = true;
+    bloqueosError    = null;
+    notifyListeners();
+    try {
+      final res = await _bloqueoRepo.listar(activo: soloActivos ? true : null);
+      bloqueos = res.results;
+    } catch (e) {
+      bloqueosError = friendlyErrorMessage(e);
+      bloqueos = [];
+    } finally {
+      loadingBloqueos = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> desbloquearEstudiante(int bloqueoId, {String observacion = ''}) async {
+    _startMutation();
+    try {
+      final actualizado = await _bloqueoRepo.desbloquear(
+        bloqueoId,
+        observacion: observacion,
+      );
+      bloqueos = bloqueos.where((b) => b.id != actualizado.id).toList();
+      return true;
+    } catch (e) {
+      mutationError = friendlyErrorMessage(e);
+      notifyListeners();
+      return false;
     } finally {
       _endMutation();
     }

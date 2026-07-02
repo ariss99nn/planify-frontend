@@ -290,6 +290,49 @@ class ResultadoGenerarHorario {
   });
 }
 
+// ─── Auto-generación de planes ────────────────────────────────────────────────
+
+class ConflictoAutoGeneracion {
+  final String competencia;
+  final String motivo;
+  final String tipo; // SIN_DOCENTE | SOBRECARGA | VALIDACION | SIN_HORAS
+
+  const ConflictoAutoGeneracion({
+    required this.competencia,
+    required this.motivo,
+    required this.tipo,
+  });
+
+  String get tipoLabel {
+    switch (tipo) {
+      case 'SIN_DOCENTE': return 'Sin docente disponible';
+      case 'SOBRECARGA':  return 'Docentes al tope de carga';
+      case 'VALIDACION':  return 'No cumple una regla del plan';
+      case 'SIN_HORAS':   return 'Sin horas configuradas';
+      default:            return 'Requiere revisión';
+    }
+  }
+}
+
+class ReporteAutoGeneracion {
+  final int    itemsCreados;
+  final List<ConflictoAutoGeneracion> conflictos;
+  final bool   requiereRevisionManual;
+
+  const ReporteAutoGeneracion({
+    required this.itemsCreados,
+    required this.conflictos,
+    required this.requiereRevisionManual,
+  });
+}
+
+class ResultadoAutoGeneracion {
+  final PlanTrimestralDetalle plan;
+  final ReporteAutoGeneracion reporte;
+
+  const ResultadoAutoGeneracion({required this.plan, required this.reporte});
+}
+
 // ─── Exception ────────────────────────────────────────────────────────────────
 
 class PlanificacionException implements Exception {

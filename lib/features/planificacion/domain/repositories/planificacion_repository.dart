@@ -32,6 +32,15 @@ abstract class PlanificacionRepository {
 
   Future<ResultadoGenerarHorario> generarHorario(int planId);
 
+  /// Arma el plan completo (competencias, horas, docente) sin intervención
+  /// manual. El plan queda EN_REVISION listo para aprobar/rechazar/editar.
+  Future<ResultadoAutoGeneracion> autoGenerarPlan({
+    required int      fichaId,
+    required int      trimestre,
+    DateTime?         fechaInicio,
+    DateTime?         fechaFin,
+  });
+
   // ── Items ──────────────────────────────────────────────────────────────────
   Future<PaginatedResponse<ItemPlan>> getItems({ItemPlanFiltros? filtros});
 

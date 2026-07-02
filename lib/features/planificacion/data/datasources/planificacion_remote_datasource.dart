@@ -97,6 +97,26 @@ class PlanificacionRemoteDatasource {
     return ResultadoGenerarHorarioModel.fromJson(data);
   }
 
+  Future<ResultadoAutoGeneracionModel> autoGenerarPlan({
+    required int      fichaId,
+    required int      trimestre,
+    DateTime?         fechaInicio,
+    DateTime?         fechaFin,
+  }) async {
+    final token = await _token();
+    final data  = await ApiService.post(
+      '/planes/auto-generar/',
+      token: token,
+      data: {
+        'ficha':     fichaId,
+        'trimestre': trimestre,
+        if (fechaInicio != null) 'fecha_inicio': _fmt(fechaInicio),
+        if (fechaFin    != null) 'fecha_fin':    _fmt(fechaFin),
+      },
+    ) as Map<String, dynamic>;
+    return ResultadoAutoGeneracionModel.fromJson(data);
+  }
+
   // ── Items ──────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getItems({ItemPlanFiltros? filtros}) async {

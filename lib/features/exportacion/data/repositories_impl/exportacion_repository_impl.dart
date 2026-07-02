@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:path_provider/path_provider.dart';
-
 import '../../../../core/api/api_service.dart';
+import '../../../../core/download/export_downloader.dart';
 import '../../../../core/models/paginated_response.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../domain/entities/exportacion_enums.dart';
@@ -32,8 +30,7 @@ class ExportacionRepositoryImpl implements ExportacionRepository {
       filtros: filtros,
       token:   token,
     );
-    final file = await _persist(bytes, modulo, formato);
-    return ExportResult(file: file, fileName: file.uri.pathSegments.last);
+    return _persist(bytes, modulo, formato);
   }
 
   @override
@@ -66,16 +63,29 @@ class ExportacionRepositoryImpl implements ExportacionRepository {
     return token;
   }
 
-  Future<File> _persist(
+  /// Delega el guardado/descarga en la implementación correcta según
+  /// la plataforma (ver core/download/export_downloader.dart):
+  /// - Android/iOS/Desktop: escribe un archivo temporal real.
+  /// - Web: dispara la descarga del navegador directamente (Blob).
+  ///
+  /// Antes esto llamaba directamente a `path_provider` + `dart:io`,
+  /// que no tienen implementación en Flutter Web y producían
+  /// `MissingPluginException(getTemporaryDirectory)` al ejecutarse
+  /// en el navegador.
+  Future<ExportResult> _persist(
     Uint8List          bytes,
     TipoExportacion    modulo,
     FormatoExportacion formato,
   ) async {
-    final dir   = await getTemporaryDirectory();
     final stamp = DateTime.now().millisecondsSinceEpoch;
     final name  = '${modulo.value.toLowerCase()}_$stamp.${formato.extension}';
-    final file  = File('${dir.path}/$name');
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
+
+    final saved = await saveExportBytes(bytes: bytes, fileName: name);
+
+    return ExportResult(
+      fileName:  saved.fileName,
+      sizeBytes: saved.sizeBytes,
+      filePath:  saved.filePath,
+    );
   }
 }

@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/theme/theme.dart';
 import '../../../../../core/widgets/cyber_loading_view.dart';
+import '../../../../../core/widgets/confirm_dialog.dart';
+import '../../../../../core/widgets/friendly_feedback.dart';
 import '../../providers/ficha_provider.dart';
 import '../../../data/models/ficha_request_model.dart';
 import '../../../../docentes/domain/entities/docente_entity.dart';
 import '../ficha_form_fields.dart';
 import '../ficha_pickers.dart';
+
+const _mesesInicioPermitidos = {1: 'Enero', 3: 'Marzo', 7: 'Julio', 10: 'Octubre'};
 
 class FichaEditView extends StatefulWidget {
   final int fichaId;
@@ -19,8 +23,7 @@ class FichaEditView extends StatefulWidget {
 }
 
 class _FichaEditViewState extends State<FichaEditView> {
-  final _formKey         = GlobalKey<FormState>();
-  final _estudiantesCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   String?   _jornada;
   String?   _estado;
@@ -28,8 +31,11 @@ class _FichaEditViewState extends State<FichaEditView> {
   DateTime? _fechaFinalizacion;
   int?      _horasSemanales;
   int?      _trimestre;
+  int?      _cupoEstimado;
+  int?      _cupoReal;
 
   DocenteEntity? _jefeGrupo;
+  int?           _jefeGrupoIdActual;
   String?        _jefeGrupoNombreActual;
   bool           _clearJefeGrupo = false;
   bool           _cargado        = false;
@@ -48,33 +54,57 @@ class _FichaEditViewState extends State<FichaEditView> {
       _cargado = true;
       final ficha = context.read<FichaProvider>().fichaDetalle;
       if (ficha != null && ficha.id == widget.fichaId) {
-        _estudiantesCtrl.text  = ficha.numeroEstudiantesEstimado.toString();
-        _jornada                = ficha.jornada;
-        _estado                 = ficha.estado;
-        _fechaInicio             = ficha.fechaInicio;
-        _fechaFinalizacion       = ficha.fechaFinalizacion;
-        _horasSemanales          = ficha.horasSemanalesObjetivo;
-        _trimestre               = ficha.trimestre;
-        _jefeGrupoNombreActual   = ficha.jefeGrupoNombre;
+        _jornada               = ficha.jornada;
+        _estado                = ficha.estado;
+        _fechaInicio            = ficha.fechaInicio;
+        _fechaFinalizacion      = ficha.fechaFinalizacion;
+        _horasSemanales         = ficha.horasSemanalesObjetivo;
+        _trimestre              = ficha.trimestre;
+        _cupoEstimado           = ficha.numeroEstudiantesEstimado;
+        _cupoReal               = ficha.numeroEstudiantesReal;
+        // FIX: 'jefe_grupo_nombre' venía null en el backend por un
+        // source mal apuntado (Docente no tiene campo 'nombre', solo
+        // 'nombre_completo'), así que este selector nunca mostraba al
+        // docente ya asignado. Con el serializer corregido, esto ahora
+        // se precarga correctamente.
+        _jefeGrupoIdActual      = ficha.jefeGrupo;
+        _jefeGrupoNombreActual  = ficha.jefeGrupoNombre;
       }
     }
   }
 
-  @override
-  void dispose() {
-    _estudiantesCtrl.dispose();
-    super.dispose();
-  }
-
+  /// Restringido a los mismos cortes de matrícula que la creación.
   Future<void> _pickFechaInicio() async {
-    final picked = await showDatePicker(
+    final hoy = DateTime.now();
+    final opciones = <DateTime>[];
+    for (var year = hoy.year - 1; opciones.length < 8; year++) {
+      for (final mes in _mesesInicioPermitidos.keys) {
+        opciones.add(DateTime(year, mes, 1));
+      }
+    }
+    opciones.sort();
+    final elegido = await showModalBottomSheet<DateTime>(
       context: context,
-      initialDate: _fechaInicio ?? DateTime.now(),
-      firstDate: DateTime(2015),
-      lastDate:  DateTime(2035),
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final f in opciones.take(8))
+              ListTile(
+                leading: const Icon(Icons.event_available, color: AppTheme.primary),
+                title: Text('${_mesesInicioPermitidos[f.month]} ${f.year}',
+                    style: const TextStyle(color: AppTheme.textPrimary)),
+                onTap: () => Navigator.pop(context, f),
+              ),
+          ],
+        ),
+      ),
     );
-    if (picked == null) return;
-    setState(() => _fechaInicio = picked);
+    if (elegido == null) return;
+    setState(() => _fechaInicio = elegido);
   }
 
   Future<void> _pickJefeGrupo() async {
@@ -95,13 +125,33 @@ class _FichaEditViewState extends State<FichaEditView> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // FIX: reemplazar un jefe de grupo ya asignado por otro distinto es
+    // una acción sensible — antes se guardaba sin más aviso. Ahora se
+    // pide confirmación explícita antes de enviar, y el backend además
+    // la exige en 'confirmar_cambio_docente'.
+    final reemplazaDocente = _jefeGrupo != null &&
+        _jefeGrupoIdActual != null &&
+        _jefeGrupo!.id != _jefeGrupoIdActual;
+    var confirmarCambioDocente = false;
+    if (reemplazaDocente) {
+      confirmarCambioDocente = await showConfirmDialog(
+        context,
+        titulo: 'Cambiar jefe de grupo',
+        mensaje:
+            'Esta ficha ya tiene a $_jefeGrupoNombreActual como jefe de '
+            'grupo. ¿Confirmas reemplazarlo por ${_jefeGrupo!.nombre}?',
+        textoConfirmar: 'Reemplazar',
+      );
+      if (!confirmarCambioDocente) return;
+    }
+
     final request = FichaUpdateRequest(
-      jornada:                   _jornada,
-      numeroEstudiantesEstimado: int.tryParse(_estudiantesCtrl.text.trim()),
-      estado:                    _estado,
-      jefeGrupoId:               _jefeGrupo?.id,
-      clearJefeGrupo:            _clearJefeGrupo,
-      fechaInicio:               _fechaInicio,
+      jornada:                 _jornada,
+      estado:                  _estado,
+      jefeGrupoId:             _jefeGrupo?.id,
+      clearJefeGrupo:          _clearJefeGrupo,
+      confirmarCambioDocente:  confirmarCambioDocente,
+      fechaInicio:             _fechaInicio,
     );
 
     final provider = context.read<FichaProvider>();
@@ -112,12 +162,11 @@ class _FichaEditViewState extends State<FichaEditView> {
     if (ficha != null) {
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-            provider.mutationError ?? 'No se pudo actualizar la ficha.'),
-        backgroundColor: Colors.red.shade700,
-        behavior: SnackBarBehavior.floating,
-      ));
+      showFriendlyApiError(
+        context,
+        provider.mutationError,
+        fallback: 'No se pudo actualizar la ficha.',
+      );
     }
   }
 
@@ -162,51 +211,44 @@ class _FichaEditViewState extends State<FichaEditView> {
           padding: const EdgeInsets.all(20),
           children: [
             const FichaSeccionLabel('Configuración'),
-            if (_jornada != null)
-              FichaDropdownField(
-                label:     'Jornada',
-                value:     _jornada!,
-                opciones:  _jornadas,
-                onChanged: (v) => setState(() => _jornada = v),
-              )
-            else
-              FichaDropdownField(
-                label:     'Jornada',
-                value:     'MANANA',
-                opciones:  _jornadas,
-                onChanged: (v) => setState(() => _jornada = v),
-              ),
-            const SizedBox(height: 14),
-            if (_estado != null)
-              FichaDropdownField(
-                label:     'Estado',
-                value:     _estado!,
-                opciones:  _estados,
-                onChanged: (v) => setState(() => _estado = v),
-              )
-            else
-              FichaDropdownField(
-                label:     'Estado',
-                value:     'ACTIVA',
-                opciones:  _estados,
-                onChanged: (v) => setState(() => _estado = v),
-              ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _estudiantesCtrl,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              decoration:
-                  _dec('Cupo estimado', icon: Icons.people_outline),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return null;
-                if (int.tryParse(v.trim()) == null) return 'Numérico';
-                return null;
-              },
+            FichaDropdownField(
+              label:     'Jornada',
+              value:     _jornada ?? 'MANANA',
+              opciones:  _jornadas,
+              onChanged: (v) => setState(() => _jornada = v),
             ),
             const SizedBox(height: 14),
-            // Horas/semana y trimestre son calculados/gestionados por el
-            // sistema; se muestran solo como referencia, sin poder editarse.
+            FichaDropdownField(
+              label:     'Estado',
+              value:     _estado ?? 'ACTIVA',
+              opciones:  _estados,
+              onChanged: (v) => setState(() => _estado = v),
+            ),
+            const SizedBox(height: 14),
+            // FIX: el cupo estimado ya no es editable — queda fijo desde
+            // la creación de la ficha. Se muestra junto al número real de
+            // estudiantes activos para que quede claro que son dos cosas
+            // distintas (algunos desertan o son bloqueados).
+            Row(
+              children: [
+                Expanded(
+                  child: InputDecorator(
+                    decoration: _dec('Cupo estimado (fijo)', icon: Icons.people_outline),
+                    child: Text('${_cupoEstimado ?? '—'}',
+                        style: const TextStyle(color: AppTheme.textPrimary)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: InputDecorator(
+                    decoration: _dec('Estudiantes reales', icon: Icons.groups_2_outlined),
+                    child: Text('${_cupoReal ?? '—'}',
+                        style: const TextStyle(color: AppTheme.textPrimary)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
@@ -238,10 +280,17 @@ class _FichaEditViewState extends State<FichaEditView> {
               enabled: !_clearJefeGrupo,
               onTap: _pickJefeGrupo,
             ),
+            const SizedBox(height: 4),
+            Text(
+              'No toda ficha necesita tener docente asignado. Reemplazar '
+              'uno ya asignado pide confirmación antes de guardar.',
+              style: TextStyle(
+                  color: AppTheme.textSecondary.withOpacity(0.55), fontSize: 11),
+            ),
             const SizedBox(height: 6),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
-              activeColor: Colors.red.shade400,
+              activeColor: Colors.amber.shade400,
               title: const Text('Quitar jefe de grupo actual',
                   style:
                       TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
@@ -255,7 +304,7 @@ class _FichaEditViewState extends State<FichaEditView> {
               children: [
                 Expanded(
                   child: FichaFechaTile(
-                    label: 'Inicio',
+                    label: 'Inicio (corte de matrícula)',
                     value: _fmtFecha(_fechaInicio),
                     onTap: _pickFechaInicio,
                   ),

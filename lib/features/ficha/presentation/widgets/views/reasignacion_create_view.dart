@@ -3,13 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/theme/theme.dart';
-import '../../../../../core/api/api_service.dart';
-import '../../../../../core/models/paginated_response.dart';
+import '../../../../../core/widgets/friendly_feedback.dart';
 import '../../providers/ficha_provider.dart';
 import '../../../data/models/ficha_request_model.dart';
-import '../../../data/repositories_impl/ficha_repository_impl.dart';
 import '../../../domain/entities/ficha_entity.dart';
-import '../../../domain/repositories/ficha_repository.dart';
 import '../../../../auth/models/user_model.dart';
 import '../ficha_pickers.dart';
 
@@ -22,12 +19,10 @@ class ReasignacionCreateView extends StatefulWidget {
 }
 
 class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
-  final _formKey     = GlobalKey<FormState>();
-  final _motivoCtrl  = TextEditingController();
-  final _fichaRepo   = FichaRepositoryImpl();
+  final _formKey    = GlobalKey<FormState>();
+  final _motivoCtrl = TextEditingController();
 
   UserModel? _estudiante;
-
   FichaListEntity? _fichaOrigen;
   FichaListEntity? _fichaDestino;
 
@@ -43,17 +38,15 @@ class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
     setState(() => _estudiante = picked);
   }
 
+  // FIX: se reemplazó la hoja de búsqueda propia de esta pantalla (que
+  // solo pedía la primera página de 15 fichas activas y por eso a veces
+  // mostraba "Sin resultados" con catálogos más grandes) por el
+  // selector compartido `pickFichaActiva`, que recorre automáticamente
+  // todas las páginas de fichas activas al abrirse.
   Future<void> _pickFicha({required bool esOrigen}) async {
-    final picked = await showModalBottomSheet<FichaListEntity>(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _FichaSearchSheet(
-        fichaRepo: _fichaRepo,
-        excluirId: esOrigen ? _fichaDestino?.id : _fichaOrigen?.id,
-      ),
+    final picked = await pickFichaActiva(
+      context,
+      excluirFichaId: esOrigen ? _fichaDestino?.id : _fichaOrigen?.id,
     );
     if (picked == null) return;
     setState(() {
@@ -68,28 +61,34 @@ class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_estudiante == null) {
-      _showSnack('Selecciona un estudiante.', isError: true);
+      showFriendlySnack(context, 'Selecciona un estudiante.',
+          tono: FeedbackTono.advertencia);
       return;
     }
     if (_fichaOrigen == null) {
-      _showSnack('Selecciona la ficha de origen.', isError: true);
+      showFriendlySnack(context, 'Selecciona la ficha de origen.',
+          tono: FeedbackTono.advertencia);
       return;
     }
     if (_fichaDestino == null) {
-      _showSnack('Selecciona la ficha de destino.', isError: true);
+      showFriendlySnack(context, 'Selecciona la ficha de destino.',
+          tono: FeedbackTono.advertencia);
       return;
     }
     if (_fichaOrigen!.id == _fichaDestino!.id) {
-      _showSnack('Las fichas de origen y destino deben ser distintas.',
-          isError: true);
+      showFriendlySnack(
+        context,
+        'Las fichas de origen y destino deben ser distintas.',
+        tono: FeedbackTono.advertencia,
+      );
       return;
     }
 
     final request = ReasignacionCreateRequest(
-      estudianteId:  _estudiante!.id,
-      fichaOrigenId: _fichaOrigen!.id,
+      estudianteId:   _estudiante!.id,
+      fichaOrigenId:  _fichaOrigen!.id,
       fichaDestinoId: _fichaDestino!.id,
-      motivo:        _motivoCtrl.text.trim(),
+      motivo:         _motivoCtrl.text.trim(),
     );
 
     final provider = context.read<FichaProvider>();
@@ -100,18 +99,12 @@ class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
     if (result != null) {
       Navigator.pop(context, true);
     } else {
-      _showSnack(
-          provider.mutationError ?? 'No se pudo crear la reasignación.',
-          isError: true);
+      showFriendlyApiError(
+        context,
+        provider.mutationError,
+        fallback: 'No se pudo crear la reasignación.',
+      );
     }
-  }
-
-  void _showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? Colors.red.shade700 : AppTheme.primary,
-      behavior: SnackBarBehavior.floating,
-    ));
   }
 
   @override
@@ -215,7 +208,7 @@ class _ReasignacionCreateViewState extends State<ReasignacionCreateView> {
   }
 }
 
-// ── _SectionLabel ──────────────────────────────────────────────────────────────
+// ── _SectionLabel ─────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {
   final String titulo;
@@ -235,7 +228,7 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── _PickerTile ────────────────────────────────────────────────────────────────
+// ── _PickerTile ────────────────────────────────────────────────────────────
 
 class _PickerTile extends StatelessWidget {
   final String label;
@@ -279,197 +272,6 @@ class _PickerTile extends StatelessWidget {
                 color: AppTheme.textSecondary.withOpacity(0.4), size: 20),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── _FichaSearchSheet ──────────────────────────────────────────────────────────
-
-class _FichaSearchSheet extends StatefulWidget {
-  final FichaRepository fichaRepo;
-  final int? excluirId;
-
-  const _FichaSearchSheet({required this.fichaRepo, this.excluirId});
-
-  @override
-  State<_FichaSearchSheet> createState() => _FichaSearchSheetState();
-}
-
-class _FichaSearchSheetState extends State<_FichaSearchSheet> {
-  final _searchCtrl  = TextEditingController();
-  List<FichaListEntity> _resultados = [];
-  bool   _cargando   = false;
-  String _ultimaBusq = '';
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _buscar('');
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _buscar(String query) async {
-    if (query == _ultimaBusq && !_cargando && _error == null) return;
-    _ultimaBusq = query;
-    setState(() {
-      _cargando = true;
-      _error = null;
-    });
-    try {
-      final PaginatedResponse<FichaListEntity> res =
-          await widget.fichaRepo.getFichas(
-        search:   query.isEmpty ? null : query,
-        estado:   'ACTIVA',
-        page:     1,
-        pageSize: 15,
-      );
-      if (!mounted) return;
-      setState(() {
-        _resultados = res.results
-            .where((f) => f.id != widget.excluirId)
-            .toList();
-      });
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _resultados = [];
-        _error = e.statusCode >= 500
-            ? 'El servidor no pudo cargar las fichas (${e.statusCode}). '
-                'Intenta de nuevo.'
-            : e.message;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _resultados = [];
-        _error = 'No se pudo conectar con el servidor. Intenta de nuevo.';
-      });
-    } finally {
-      if (mounted) setState(() => _cargando = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      maxChildSize:     0.95,
-      minChildSize:     0.5,
-      expand:           false,
-      builder: (_, scrollCtrl) => Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(
-                color: AppTheme.border,
-                borderRadius: BorderRadius.circular(2)),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              controller: _searchCtrl,
-              autofocus:  true,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              onChanged:  _buscar,
-              decoration: InputDecoration(
-                hintText: 'Buscar ficha activa…',
-                hintStyle: TextStyle(
-                    color: AppTheme.textSecondary.withOpacity(0.4)),
-                prefixIcon:
-                    const Icon(Icons.search, color: AppTheme.primary),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide:
-                        BorderSide(color: AppTheme.border.withOpacity(0.5))),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              ),
-            ),
-          ),
-          Expanded(
-            child: _cargando
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? Center(
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.error_outline,
-                                  color: Colors.redAccent, size: 28),
-                              const SizedBox(height: 10),
-                              Text(_error!,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      color: Colors.redAccent)),
-                              const SizedBox(height: 14),
-                              OutlinedButton.icon(
-                                onPressed: () => _buscar(_ultimaBusq),
-                                icon: const Icon(Icons.refresh, size: 18),
-                                label: const Text('Reintentar'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppTheme.primary,
-                                  side: BorderSide(color: AppTheme.primary),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : _resultados.isEmpty
-                    ? Center(
-                        child: Text('Sin resultados',
-                            style: TextStyle(
-                                color:
-                                    AppTheme.textSecondary.withOpacity(0.6))))
-                    : ListView.builder(
-                        controller:  scrollCtrl,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
-                        itemCount:   _resultados.length,
-                        itemBuilder: (_, i) {
-                          final f = _resultados[i];
-                          return ListTile(
-                            onTap: () => Navigator.pop(context, f),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color:
-                                    AppTheme.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.folder_outlined,
-                                  color: AppTheme.primary, size: 18),
-                            ),
-                            title: Text(f.codigoFicha,
-                                style: const TextStyle(
-                                    color: AppTheme.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14)),
-                            subtitle: Text(
-                              '${f.programaNombre} · ${f.jornadaDisplay}',
-                              style: TextStyle(
-                                  color:
-                                      AppTheme.textSecondary.withOpacity(0.7),
-                                  fontSize: 12),
-                            ),
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppTheme.primary, size: 18),
-                          );
-                        },
-                      ),
-          ),
-        ],
       ),
     );
   }
